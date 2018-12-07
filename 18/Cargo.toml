@@ -5,3 +5,4 @@ edition = "2018"
 
 [dependencies]
 regex = "1"
+indicatif = "0.10.3"
