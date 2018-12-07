@@ -22,20 +22,30 @@ fn main() -> std::io::Result<()> {
 }
 
 fn f1(sleeps: &HashMap<usize, Vec<Sleep>, RandomState>) -> usize {
-    let (sleepiest_id, sleepiest_sleeps) = sleeps.iter()
+    let (sleepiest_id, sleepiest_sleeps) = sleeps
+        .iter()
         .sorted_by_key(|(_, sleeps)| sleeps.iter().map(|s| s.len().num_minutes()).sum::<i64>())
-        .last().unwrap().clone();
+        .last()
+        .unwrap()
+        .clone();
     let sleep_mins = sleeps_per_minute(sleepiest_sleeps);
-    let (sleepiest_minute, _) = sleep_mins.iter().enumerate().max_by_key(|(_, &slept)| slept).unwrap();
+    let (sleepiest_minute, _) = sleep_mins
+        .iter()
+        .enumerate()
+        .max_by_key(|(_, &slept)| slept)
+        .unwrap();
     *sleepiest_id * sleepiest_minute
 }
 
 fn f2(sleeps: &HashMap<usize, Vec<Sleep>, RandomState>) -> usize {
-    let guards_minutes_most_asleep = sleeps.iter()
+    let guards_minutes_most_asleep = sleeps
+        .iter()
         .map(|(id, sleeps)| (id, sleeps_per_minute(sleeps)))
         .map(|(id, mins)| {
-            let (ref minute, times_asleep) = mins.iter()
-                .enumerate().max_by_key(|(_, &slept)| slept)
+            let (ref minute, times_asleep) = mins
+                .iter()
+                .enumerate()
+                .max_by_key(|(_, &slept)| slept)
                 .unwrap();
             (id, (minute.clone(), times_asleep.clone()))
         });
@@ -46,14 +56,16 @@ fn f2(sleeps: &HashMap<usize, Vec<Sleep>, RandomState>) -> usize {
             max_sleeps_minute = minute;
             max_sleeps = times_asleep;
         }
-    };
+    }
     max_sleeps_id * max_sleeps_minute
 }
 
 fn to_sleeps(inputs: &Vec<String>) -> HashMap<usize, Vec<Sleep>, RandomState> {
-    let records = inputs.par_iter()
+    let records = inputs
+        .par_iter()
         .map(|i| i.parse::<Record>().unwrap())
-        .collect::<Vec<Record>>().into_iter()
+        .collect::<Vec<Record>>()
+        .into_iter()
         .sorted_by_key(|&r| match r {
             Record::Guard { ts, id: _ } => ts,
             Record::Sleep(ts) => ts,
@@ -62,7 +74,10 @@ fn to_sleeps(inputs: &Vec<String>) -> HashMap<usize, Vec<Sleep>, RandomState> {
     let shifts = records.into_iter().shifts();
     let mut guard_sleeps = HashMap::new();
     shifts.for_each(|mut s: Shift| {
-        guard_sleeps.entry(s.guard_id).or_insert(Vec::new()).append(&mut s.sleeps)
+        guard_sleeps
+            .entry(s.guard_id)
+            .or_insert(Vec::new())
+            .append(&mut s.sleeps)
     });
     guard_sleeps
 }
@@ -93,9 +108,11 @@ impl FromStr for Record {
         let sleep_re = Regex::new(r"falls asleep$").unwrap();
         let wake_re = Regex::new(r"wakes up$").unwrap();
 
-        let ts = ts_re.captures(&s[..19])
+        let ts = ts_re
+            .captures(&s[..19])
             .ok_or(ParseRecordError::new(s, "TS did not match regex"))?
-            .get(1).map(|m| NaiveDateTime::parse_from_str(m.as_str(), "%Y-%m-%d %H:%M"))
+            .get(1)
+            .map(|m| NaiveDateTime::parse_from_str(m.as_str(), "%Y-%m-%d %H:%M"))
             .unwrap()
             .map_err(|_| ParseRecordError::new(s, "TS could not be parsed"))?;
 
@@ -104,7 +121,7 @@ impl FromStr for Record {
             let guard_id = caps.get(1).unwrap().as_str().parse();
             match guard_id {
                 Ok(id) => Ok(Record::Guard { ts, id }),
-                Err(_) => Err(ParseRecordError::new(s, "Guard ID could not be parsed"))
+                Err(_) => Err(ParseRecordError::new(s, "Guard ID could not be parsed")),
             }
         } else if sleep_re.is_match(message) {
             Ok(Record::Sleep(ts))
@@ -135,38 +152,50 @@ impl Sleep {
 }
 
 struct ShiftParser<I: Iterator> {
-    iter: Peekable<I>
+    iter: Peekable<I>,
 }
 
-impl<I: Iterator> Iterator for ShiftParser<I> where
-    I: Iterator<Item=Record> {
+impl<I: Iterator> Iterator for ShiftParser<I>
+where
+    I: Iterator<Item = Record>,
+{
     type Item = Shift;
 
     fn next(&mut self) -> Option<<Self as Iterator>::Item> {
         let guard_rec: Record = self.iter.next()?;
         let (mut shift, mut cur_start) = match guard_rec {
-            Record::Guard { ts, id } => {
-                (Shift { guard_id: id, sleeps: Vec::new() }, ts)
-            }
+            Record::Guard { ts, id } => (
+                Shift {
+                    guard_id: id,
+                    sleeps: Vec::new(),
+                },
+                ts,
+            ),
             _ => panic!("Iterator must start with a Guard record!"),
         };
         let mut push_sleep = |start, end| shift.sleeps.push(Sleep { start: start, end });
-        for rec in self.iter.peeking_take_while(|r| !matches!(r, Record::Guard{ts:_, id:_})) {
+        for rec in self
+            .iter
+            .peeking_take_while(|r| !matches!(r, Record::Guard{ts:_, id:_}))
+        {
             match rec {
                 Record::Sleep(ts) => cur_start = ts,
                 Record::Wake(ts) => push_sleep(cur_start, ts),
                 Record::Guard { ts: _, id: _ } => unreachable!(),
             }
-        };
+        }
         return Some(shift);
     }
 }
 
 trait ShiftParserExt: Iterator {
-    fn shifts(self) -> ShiftParser<Self> where
-        Self: Sized
+    fn shifts(self) -> ShiftParser<Self>
+    where
+        Self: Sized,
     {
-        ShiftParser { iter: self.peekable() }
+        ShiftParser {
+            iter: self.peekable(),
+        }
     }
 }
 
@@ -189,7 +218,11 @@ impl ParseRecordError {
 
 impl<'a> fmt::Display for ParseRecordError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Error parsing string {} into record: {}", self.string, self.message)
+        write!(
+            f,
+            "Error parsing string {} into record: {}",
+            self.string, self.message
+        )
     }
 }
 

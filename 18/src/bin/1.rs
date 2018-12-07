@@ -1,5 +1,6 @@
-use aoc18::util::{parse, print_ans};
 use std::collections::HashSet;
+
+use aoc18::util::{parse, print_ans};
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<i32> = parse("inputs/1")?;

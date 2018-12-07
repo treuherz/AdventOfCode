@@ -1,8 +1,9 @@
 #![feature(slice_partition_dedup)]
 
-use aoc18::util::{parse, print_ans};
 use std::collections::BTreeMap;
 use std::ops::Add;
+
+use aoc18::util::{parse, print_ans};
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<String> = parse("inputs/2")?;
@@ -24,11 +25,11 @@ impl From<&BTreeMap<char, i32>> for TwosAndThrees {
             match count {
                 2 => twos = 1,
                 3 => threes = 1,
-                _ => ()
+                _ => (),
             };
         }
         // println!{"{}, {}", twos, threes}
-        TwosAndThrees{twos, threes}
+        TwosAndThrees { twos, threes }
     }
 }
 
@@ -63,25 +64,29 @@ fn char_count(input: &String) -> BTreeMap<char, i32> {
 }
 
 fn f1(inputs: &Vec<String>) -> i32 {
-    let twos_and_threes = inputs.iter().fold(
-        TwosAndThrees{twos: 0, threes: 0},
-        |acc, string| acc + TwosAndThrees::from(string)
-    );
+    let twos_and_threes = inputs
+        .iter()
+        .fold(TwosAndThrees { twos: 0, threes: 0 }, |acc, string| {
+            acc + TwosAndThrees::from(string)
+        });
     twos_and_threes.twos * twos_and_threes.threes
 }
 
 fn f2(inputs: &Vec<String>) -> String {
     for i in 0..inputs.first().unwrap().len() {
-        let mut working = inputs.iter().map(|s| {
-            let mut ss = s.clone();
-            ss.remove(i);
-            ss
-        }).collect::<Vec<String>>();
+        let mut working = inputs
+            .iter()
+            .map(|s| {
+                let mut ss = s.clone();
+                ss.remove(i);
+                ss
+            })
+            .collect::<Vec<String>>();
         working.sort_unstable();
         let (_, dupes) = working.partition_dedup();
         if !dupes.is_empty() {
             assert_eq!(dupes.len(), 1);
-            return dupes.first().unwrap().to_string()
+            return dupes.first().unwrap().to_string();
         }
     }
     String::new()

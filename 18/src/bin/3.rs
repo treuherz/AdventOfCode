@@ -1,6 +1,7 @@
-use aoc18::util::{parse, print_ans};
+use rayon::prelude::*;
 use regex::Regex;
-use indicatif::ProgressBar;
+
+use aoc18::util::parse;
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<String> = parse("inputs/3")?;
@@ -13,12 +14,7 @@ fn main() -> std::io::Result<()> {
 }
 
 fn parse_claims(inputs: &Vec<String>) -> Vec<Claim> {
-    let bar = ProgressBar::new(inputs.len() as u64);
-    let claims: Vec<Claim> = inputs.iter().map(|s| {
-        bar.inc(1);
-        Claim::from(s)
-    }).collect();
-    bar.finish_and_clear();
+    let claims: Vec<Claim> = inputs.par_iter().map(|s| Claim::from(s)).collect();
     claims
 }
 
@@ -43,25 +39,23 @@ fn f2(claims: &Vec<Claim>, sheet: &SqMatrix) -> usize {
         for i in claim.y..(claim.y + claim.height) as usize {
             for j in claim.x..(claim.x + claim.width) as usize {
                 if sheet.get(i, j).unwrap() >= &2 {
-                    continue 'main
+                    continue 'main;
                 }
             }
         }
-        return claim.id
+        return claim.id;
     }
     0
 }
 
 struct SqMatrix {
     mat: Vec<Vec<usize>>,
-    size: usize,
 }
 
 impl SqMatrix {
     fn new(fill: usize, size: usize) -> SqMatrix {
         SqMatrix {
             mat: vec![vec![fill; size]; size],
-            size,
         }
     }
 
