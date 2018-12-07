@@ -8,11 +8,11 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn f1(inputs: &Vec<i32>) -> i32 {
+fn f1(inputs: &[i32]) -> i32 {
     inputs.iter().sum()
 }
 
-fn f2(inputs: &Vec<i32>) -> i32 {
+fn f2(inputs: &[i32]) -> i32 {
     let l = inputs.iter().cycle();
     let mut seen = HashSet::new();
     let mut cur: i32 = 0;

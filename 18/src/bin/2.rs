@@ -50,7 +50,7 @@ impl Add for TwosAndThrees {
     }
 }
 
-fn char_count(input: &String) -> BTreeMap<char, i32> {
+fn char_count(input: &str) -> BTreeMap<char, i32> {
     let mut counts = BTreeMap::new();
     let characters = input.chars();
     for character in characters {
@@ -63,7 +63,7 @@ fn char_count(input: &String) -> BTreeMap<char, i32> {
     counts
 }
 
-fn f1(inputs: &Vec<String>) -> i32 {
+fn f1(inputs: &[String]) -> i32 {
     let twos_and_threes = inputs
         .iter()
         .fold(TwosAndThrees { twos: 0, threes: 0 }, |acc, string| {
@@ -72,7 +72,7 @@ fn f1(inputs: &Vec<String>) -> i32 {
     twos_and_threes.twos * twos_and_threes.threes
 }
 
-fn f2(inputs: &Vec<String>) -> String {
+fn f2(inputs: &[String]) -> String {
     for i in 0..inputs.first().unwrap().len() {
         let mut working = inputs
             .iter()

@@ -13,12 +13,12 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn parse_claims(inputs: &Vec<String>) -> Vec<Claim> {
-    let claims: Vec<Claim> = inputs.par_iter().map(|s| Claim::from(s)).collect();
+fn parse_claims(inputs: &[String]) -> Vec<Claim> {
+    let claims: Vec<Claim> = inputs.par_iter().map(Claim::from).collect();
     claims
 }
 
-fn claim_sheet(claims: &Vec<Claim>, size: usize) -> SqMatrix {
+fn claim_sheet(claims: &[Claim], size: usize) -> SqMatrix {
     let mut sheet = SqMatrix::new(0, size);
     for claim in claims {
         for i in claim.y..(claim.y + claim.height) as usize {
@@ -31,14 +31,14 @@ fn claim_sheet(claims: &Vec<Claim>, size: usize) -> SqMatrix {
 }
 
 fn f1(sheet: &SqMatrix) -> usize {
-    sheet.mat.iter().flatten().filter(|i| i >= &&2usize).count()
+    sheet.mat.iter().flatten().filter(|&&i| i >= 2usize).count()
 }
 
-fn f2(claims: &Vec<Claim>, sheet: &SqMatrix) -> usize {
+fn f2(claims: &[Claim], sheet: &SqMatrix) -> usize {
     'main: for claim in claims {
         for i in claim.y..(claim.y + claim.height) as usize {
             for j in claim.x..(claim.x + claim.width) as usize {
-                if sheet.get(i, j).unwrap() >= &2 {
+                if *sheet.get(i, j).unwrap() >= 2 {
                     continue 'main;
                 }
             }

@@ -11,12 +11,12 @@ pub mod util {
         Ok(line_iter.collect())
     }
 
-    pub fn print_ans<I, O1, O2, F1, F2>(inputs: &Vec<I>, f1: F1, f2: F2)
+    pub fn print_ans<I, O1, O2, F1, F2>(inputs: &[I], f1: F1, f2: F2)
     where
         O1: std::fmt::Display,
         O2: std::fmt::Display,
-        F1: Fn(&Vec<I>) -> O1,
-        F2: Fn(&Vec<I>) -> O2,
+        F1: Fn(&[I]) -> O1,
+        F2: Fn(&[I]) -> O2,
     {
         let a1 = f1(&inputs);
         let a2 = f2(&inputs);
