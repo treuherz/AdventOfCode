@@ -19,16 +19,13 @@ struct TwosAndThrees {
 
 impl From<&BTreeMap<char, i32>> for TwosAndThrees {
     fn from(map: &BTreeMap<char, i32>) -> TwosAndThrees {
-        let mut twos = 0;
-        let mut threes = 0;
-        for count in map.values() {
+        let (twos, threes) = map.values().fold((0, 0), |(twos, threes), count| {
             match count {
-                2 => twos = 1,
-                3 => threes = 1,
-                _ => (),
-            };
-        }
-        // println!{"{}, {}", twos, threes}
+                2 => (1, threes),
+                3 => (twos, 1),
+                _ => (twos, threes),
+            }
+        });
         TwosAndThrees { twos, threes }
     }
 }
@@ -51,16 +48,10 @@ impl Add for TwosAndThrees {
 }
 
 fn char_count(input: &str) -> BTreeMap<char, i32> {
-    let mut counts = BTreeMap::new();
-    let characters = input.chars();
-    for character in characters {
-        *counts.entry(character).or_insert(0) += 1;
-    }
-    // for (k, v) in &counts {
-    //     print!("{}: {}, ", k, v);
-    // }
-    // print!("\n");
-    counts
+    input.chars().fold(BTreeMap::new(), |mut acc, c| {
+        *acc.entry(c).or_insert(0) += 1;
+        acc
+    })
 }
 
 fn f1(inputs: &[String]) -> i32 {
