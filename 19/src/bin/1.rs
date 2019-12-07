@@ -1,10 +1,10 @@
-use aoc19::util::{parse, print_ans};
+use aoc19::util::{parse, print_answers};
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<i64> = parse("inputs/1")?;
-    print_ans(&inputs, f1, f2);
+    print_answers(&inputs, f1, f2);
     Ok(())
 }
 

@@ -1,21 +1,12 @@
-use std::borrow::BorrowMut;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fs::File;
-use std::io::SeekFrom::Start;
-use std::io::{BufRead, BufReader, Cursor, Read, Seek, SeekFrom};
-use std::ops::Deref;
-use std::str::FromStr;
-
-use aoc19::util::print_ans;
 use aoc19::computer;
-use std::hint::unreachable_unchecked;
+use aoc19::util::print_answers;
+use std::error::Error;
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 fn main() -> Result<()> {
     let inputs: Vec<usize> = parse_commas("inputs/2")?;
-    print_ans(&inputs, f1, f2);
+    print_answers(&inputs, f1, f2);
     Ok(())
 }
 
