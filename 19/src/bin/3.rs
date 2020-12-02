@@ -1,9 +1,10 @@
-use aoc19::util::{parse, print_answer, print_answers};
+use std::collections::HashMap;
+use std::convert::TryInto;
 use std::str::FromStr;
 
 use failure::{format_err, Error};
-use std::collections::HashMap;
-use std::convert::TryInto;
+
+use aoc19::util::{parse, print_answers};
 
 fn main() -> Result<(), Error> {
     let inputs: Vec<Wire> = parse_wires(parse("inputs/3")?);

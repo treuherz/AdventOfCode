@@ -1,4 +1,5 @@
 use aoc19::computer;
+use aoc19::computer::Memory;
 use aoc19::util::print_answers;
 use std::error::Error;
 
@@ -20,10 +21,10 @@ fn parse_commas(path: &str) -> Result<Vec<usize>> {
 }
 
 fn f1(input: &Vec<usize>) -> usize {
-    let mut mem = input.clone();
-    mem[1] = 12;
-    mem[2] = 2;
-    computer::run(mem)[0]
+    let mem = Memory::new(input);
+    mem.set(1, 12);
+    mem.set(2, 2);
+    computer::run(mem).get(0)
 }
 
 fn f2(input: &Vec<usize>) -> usize {
@@ -31,10 +32,10 @@ fn f2(input: &Vec<usize>) -> usize {
     let max = input.len();
     for noun in 0..max {
         for verb in 0..max {
-            let mut mem = input.clone();
-            mem[1] = noun;
-            mem[2] = verb;
-            let out = computer::run(mem)[0];
+            let mem = Memory::new(input);
+            mem.set(1, noun);
+            mem.set(2, verb);
+            let out = computer::run(mem).get(0);
             if out == GOAL {
                 return 100 * noun + verb;
             }

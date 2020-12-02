@@ -1,6 +1,4 @@
 use aoc19::util::{parse, print_answers};
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<i64> = parse("inputs/1")?;
