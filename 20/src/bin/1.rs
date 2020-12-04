@@ -28,7 +28,7 @@ fn f2(inputs: &Vec<i64>) -> i64 {
     for (i, n) in sorted.iter().enumerate() {
         for (j, m) in sorted[i..].iter().enumerate() {
             let res = sorted[i..][j..].binary_search(&(TARGET - n - m));
-            if let Ok(k) = res {
+            if res.is_ok() {
                 dbg!(n, m, TARGET - n - m);
                 return n * m * (TARGET - n - m);
             }
