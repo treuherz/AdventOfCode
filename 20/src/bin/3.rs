@@ -19,7 +19,7 @@ type Line = [Space; WIDTH];
 type Coord = [usize; 2];
 
 struct Map {
-    data: Vec<Line>
+    data: Vec<Line>,
 }
 
 impl Map {
@@ -53,13 +53,14 @@ fn f1(map: &Map) -> i64 {
         if map.tree_at([y, x]) {
             acc += 1
         }
-        x += 3; y += 1
+        x += 3;
+        y += 1
     }
     acc
 }
 
 fn del(y: usize, x: usize) -> impl Fn(Coord) -> Coord {
-   move |c| [c[0] + y, c[1] + x]
+    move |c| [c[0] + y, c[1] + x]
 }
 
 fn f2(map: &Map) -> i64 {
