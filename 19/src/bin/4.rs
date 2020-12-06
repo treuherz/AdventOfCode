@@ -1,19 +1,18 @@
 use aoc19::util::print_answers;
-use failure::Error;
-use failure::_core::cmp::Ordering;
+use std::cmp::Ordering;
 
-fn main() -> Result<(), Error> {
+fn main() -> anyhow::Result<()> {
     let inputs: Vec<u64> = (372304..847060).collect();
-    print_answers(&inputs, f1, f2);
+    print_answers(4, &inputs, f1, f2);
     Ok(())
 }
 
-fn f1(range: &Vec<u64>) -> usize {
+fn f1(range: &[u64]) -> usize {
     let filtered: Vec<&u64> = range.iter().filter(|&n| pred1(n)).collect();
     filtered.len()
 }
 
-fn f2(range: &Vec<u64>) -> usize {
+fn f2(range: &[u64]) -> usize {
     let filtered: Vec<&u64> = range.iter().filter(|&n| pred2(n)).collect();
     filtered.len()
 }

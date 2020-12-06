@@ -1,29 +1,34 @@
 pub mod util {
+    use anyhow::anyhow;
+    use std::borrow::Borrow;
     use std::str::FromStr;
 
-    pub fn parse<T: FromStr>(path: &str) -> std::io::Result<Vec<T>> {
+    pub fn parse<T>(path: &str) -> anyhow::Result<Vec<T>>
+    where
+        T: FromStr,
+        <T as FromStr>::Err: std::error::Error + Send + Sync + 'static,
+    {
         let contents = std::fs::read_to_string(path)?;
-        let line_iter = contents.lines().filter_map(|l| l.parse::<T>().ok());
-        Ok(line_iter.collect())
+        contents
+            .lines()
+            .map(|l| l.parse::<T>().map_err(|e| anyhow!(e)))
+            .collect()
     }
 
-    pub fn print_answers<I, O1, O2, F1, F2>(inputs: &Vec<I>, f1: F1, f2: F2)
+    pub fn print_answers<I, J, O1, O2, F1, F2>(day: u32, input: &I, part1: F1, part2: F2)
     where
         O1: std::fmt::Display,
         O2: std::fmt::Display,
-        F1: Fn(&Vec<I>) -> O1,
-        F2: Fn(&Vec<I>) -> O2,
+        I: Borrow<J>,
+        J: ?Sized,
+        F1: Fn(&J) -> O1,
+        F2: Fn(&J) -> O2,
     {
-        println!("{}", f1(&inputs));
-        println!("{}", f2(&inputs));
-    }
-
-    pub fn print_answer<I, O, F>(inputs: &Vec<I>, f: F)
-    where
-        O: std::fmt::Display,
-        F: Fn(&Vec<I>) -> O,
-    {
-        println!("{}", f(&inputs));
+        println!("─── Day {}, Part 1 ───", day);
+        println!("{}", part1(input.borrow()));
+        println!();
+        println!("─── Day {}, Part 2 ───", day);
+        println!("{}", part2(input.borrow()));
     }
 }
 

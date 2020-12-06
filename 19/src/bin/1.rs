@@ -1,8 +1,8 @@
 use aoc19::util::{parse, print_answers};
 
-fn main() -> std::io::Result<()> {
+fn main() -> anyhow::Result<()> {
     let inputs: Vec<i64> = parse("inputs/1")?;
-    print_answers(&inputs, f1, f2);
+    print_answers(1, &inputs, f1, f2);
     Ok(())
 }
 
@@ -18,10 +18,10 @@ fn fuel_full(mass: &i64) -> i64 {
     fuel + fuel_full(&fuel)
 }
 
-fn f1(inputs: &Vec<i64>) -> i64 {
+fn f1(inputs: &[i64]) -> i64 {
     inputs.iter().map(fuel_step).sum()
 }
 
-fn f2(inputs: &Vec<i64>) -> i64 {
+fn f2(inputs: &[i64]) -> i64 {
     inputs.iter().map(fuel_full).sum()
 }

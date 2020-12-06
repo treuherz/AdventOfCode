@@ -2,17 +2,17 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::str::FromStr;
 
-use failure::{format_err, Error};
+use anyhow::anyhow;
 
 use aoc19::util::{parse, print_answers};
 
-fn main() -> Result<(), Error> {
+fn main() -> anyhow::Result<()> {
     let inputs: Vec<Wire> = parse_wires(parse("inputs/3")?);
-    print_answers(&inputs, f1, f2);
+    print_answers(3, &inputs, f1, f2);
     Ok(())
 }
 
-fn f1(wires: &Vec<Wire>) -> u64 {
+fn f1(wires: &[Wire]) -> u64 {
     let mut grid: Grid<bool> = Grid::new();
     let mut crossings: Vec<Coord> = Vec::new();
     for (idx, wire) in wires.iter().enumerate() {
@@ -30,7 +30,7 @@ fn f1(wires: &Vec<Wire>) -> u64 {
     crossings.iter().map(Coord::dist).min().unwrap()
 }
 
-fn f2(wires: &Vec<Wire>) -> u64 {
+fn f2(wires: &[Wire]) -> u64 {
     let mut grid: Grid<u64> = Grid::new();
     let mut crossings: Vec<u64> = Vec::new();
     for (idx, wire) in wires.iter().enumerate() {
@@ -56,7 +56,7 @@ fn parse_wires(input: Vec<String>) -> Vec<Wire> {
         .map(|i| {
             i.split(',')
                 .map(|s| s.parse())
-                .collect::<Result<Wire, Error>>()
+                .collect::<anyhow::Result<Wire>>()
                 .unwrap()
         })
         .collect()
@@ -117,7 +117,7 @@ struct Segment {
 }
 
 impl FromStr for Segment {
-    type Err = Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use Direction::*;
@@ -128,7 +128,7 @@ impl FromStr for Segment {
             'D' => Down,
             'L' => Left,
             'R' => Right,
-            l @ _ => return Err(format_err!("{} is not a direction", l)),
+            l @ _ => return Err(anyhow!("{} is not a direction", l)),
         };
         let distance: u64 = chars.as_str().parse()?;
         Ok(Segment {
