@@ -33,7 +33,6 @@ fn parse_passports(input: &Vec<String>) -> Vec<Passport> {
     passports
 }
 
-
 lazy_static! {
     static ref REQUIRED_KEYS: Vec<&'static str> =
         vec!["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"];
@@ -53,13 +52,8 @@ impl<'a> Passport<'_> {
 
     fn is_valid(&self) -> bool {
         self.has_required_keys()
-            && self.0.iter().enumerate().all(|(n, (&k, &v))| {
-                let res = Passport::validate_field(k, v);
-                if let Err(e) = &res {
-                    dbg!(&e);
-                }
-                res.is_ok()
-            })
+            && self.0.iter()
+                .all(|(&k, &v)| Passport::validate_field(k, v).is_ok())
     }
 
     fn validate_field(k: &str, v: &str) -> anyhow::Result<()> {
