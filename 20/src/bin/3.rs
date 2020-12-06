@@ -22,8 +22,14 @@ struct Map {
     data: Vec<Line>,
 }
 
+impl AsRef<Map> for Map {
+    fn as_ref(&self) -> &Map {
+        self
+    }
+}
+
 impl Map {
-    fn from_inputs(inputs: &Vec<String>) -> Map {
+    fn from_inputs(inputs: &[String]) -> Map {
         let mut data: Vec<Line> = vec![];
         for s in inputs {
             let mut line = [Space::Empty; WIDTH];

@@ -11,7 +11,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 /// Count number of characters appearing in any line for each group
-fn part1(inputs: &Vec<String>) -> usize {
+fn part1(inputs: &[String]) -> usize {
     inputs
         // Group the input on empty lines
         .split(|s| s.is_empty())
@@ -29,7 +29,7 @@ fn part1(inputs: &Vec<String>) -> usize {
 }
 
 /// Count characters appearing in all lines for each group
-fn part2(inputs: &Vec<String>) -> usize {
+fn part2(inputs: &[String]) -> usize {
     inputs
         // Group the input on empty lines
         .split(|s| s.is_empty())

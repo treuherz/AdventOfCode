@@ -14,7 +14,7 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn parse_passports(input: &Vec<String>) -> Vec<Passport> {
+fn parse_passports(input: &[String]) -> Vec<Passport> {
     let mut passports: Vec<Passport> = vec![];
     let mut cur: Passport = Passport(HashMap::new());
     for s in input {
@@ -23,8 +23,8 @@ fn parse_passports(input: &Vec<String>) -> Vec<Passport> {
             cur = Passport(HashMap::new());
             continue;
         }
-        s.split(" ").for_each(|kv| {
-            let (k, v) = kv.split_once(":").unwrap();
+        s.split(' ').for_each(|kv| {
+            let (k, v) = kv.split_once(':').unwrap();
             cur.0.insert(k, v);
         })
     }
@@ -95,10 +95,10 @@ impl<'a> Passport<'_> {
     }
 }
 
-fn f1(passports: &Vec<Passport>) -> usize {
+fn f1(passports: &[Passport]) -> usize {
     passports.iter().filter(|&p| p.has_required_keys()).count()
 }
 
-fn f2(passports: &Vec<Passport>) -> usize {
+fn f2(passports: &[Passport]) -> usize {
     passports.iter().filter(|&p| p.is_valid()).count()
 }

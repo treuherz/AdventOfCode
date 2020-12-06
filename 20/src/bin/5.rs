@@ -16,7 +16,7 @@ fn len(pair: (u32, u32)) -> u32 {
     pair.1 - pair.0
 }
 
-fn parse_ids(inputs: &Vec<String>) -> Vec<u32> {
+fn parse_ids(inputs: &[String]) -> Vec<u32> {
     inputs
         .iter()
         // Break row and column spec apart
@@ -50,15 +50,15 @@ fn parse_ids(inputs: &Vec<String>) -> Vec<u32> {
         .collect()
 }
 
-fn f1(ids: &Vec<u32>) -> u32 {
+fn f1(ids: &[u32]) -> u32 {
     // Greatest ID number
     *ids.iter().max().unwrap()
 }
 
-fn f2(ids: &Vec<u32>) -> u32 {
+fn f2(ids: &[u32]) -> u32 {
     // Find missing ID number. First we sort, then we check for a pair of non-consecutive IDs
-    let mut ids = ids.clone();
-    ids.sort();
+    let mut ids = ids.to_owned();
+    ids.sort_unstable();
     ids.iter()
         .tuple_windows()
         .find(|(&m, &n)| m + 1 != n)

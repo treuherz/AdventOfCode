@@ -8,22 +8,22 @@ fn main() -> std::io::Result<()> {
 
 const TARGET: i64 = 2020;
 
-fn f1(inputs: &Vec<i64>) -> i64 {
-    let mut sorted = inputs.clone();
-    sorted.sort();
+fn f1(inputs: &[i64]) -> i64 {
+    let mut sorted = inputs.to_owned();
+    sorted.sort_unstable();
 
     for (i, n) in sorted.iter().enumerate() {
         let res = sorted[i..].binary_search(&(TARGET - n));
-        if let Ok(_) = res {
+        if res.is_ok() {
             return n * (TARGET - n);
         }
     }
     panic!("answer not found");
 }
 
-fn f2(inputs: &Vec<i64>) -> i64 {
-    let mut sorted = inputs.clone();
-    sorted.sort();
+fn f2(inputs: &[i64]) -> i64 {
+    let mut sorted = inputs.to_owned();
+    sorted.sort_unstable();
 
     for (i, n) in sorted.iter().enumerate() {
         for (j, m) in sorted[i..].iter().enumerate() {

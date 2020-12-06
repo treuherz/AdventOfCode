@@ -9,7 +9,7 @@ fn main() -> std::io::Result<()> {
 }
 
 
-fn f1(inputs: &Vec<String>) -> usize {
+fn f1(inputs: &[String]) -> usize {
     let re: Regex = Regex::new(r"^(?P<n1>\d+)-(?P<n2>\d+) (?P<letter>[a-z]): (?P<pass>[a-z]+)$").unwrap();
 
     inputs.iter().filter(|&line| {
@@ -26,7 +26,7 @@ fn f1(inputs: &Vec<String>) -> usize {
     }).count()
 }
 
-fn f2(inputs: &Vec<String>) -> usize {
+fn f2(inputs: &[String]) -> usize {
     let re: Regex = Regex::new(r"^(?P<n1>\d+)-(?P<n2>\d+) (?P<letter>[a-z]): (?P<pass>[a-z]+)$").unwrap();
 
     inputs.iter().filter(|&line| {
