@@ -1,3 +1,5 @@
+#![feature(default_free_fn)]
+
 pub mod util {
     use anyhow::anyhow;
     use std::borrow::Borrow;
@@ -32,147 +34,201 @@ pub mod util {
     }
 }
 
-pub mod computer {
-    use crate::computer::ParamMode::*;
-    use std::borrow::BorrowMut;
-    use std::cell::{Cell, RefCell};
-    use std::rc::Rc;
-    use Operation::*;
+pub mod intcode {
+    use std::convert::TryInto;
 
-    pub fn run(mut mem: Memory) -> Memory {
-        let mut cur = 0;
-        loop {
-            match mem.get(cur) {
-                99 => break,
-                n @ _ => {
-                    let op = Operation::from_code(&n);
-                    op.run(&cur, &mut mem);
-                    cur += op.params() + 1;
-                }
-            }
+    pub fn parse_memory(path: &str) -> anyhow::Result<Vec<i64>> {
+        let s = std::fs::read_to_string(path)?;
+        let mut out = Vec::new();
+        for i in s.trim_end().split(',') {
+            out.push(i.parse()?);
         }
-        return mem;
+        Ok(out)
     }
 
-    #[derive(Debug, Clone)]
-    pub struct Memory(Vec<Cell<usize>>);
+    #[derive(Debug, Eq, PartialEq)]
+    pub struct Memory(Vec<i64>);
 
     impl Memory {
-        pub fn new(data: &Vec<usize>) -> Memory {
-            Memory(data.iter().map(|n| Cell::new(*n)).collect())
+        pub fn new(input: &[i64]) -> Memory {
+            Memory(input.to_vec())
         }
 
-        pub fn get(&self, pos: usize) -> usize {
-            self.0[pos].get()
+        pub fn run(&mut self) {
+            self.run_on(None);
         }
 
-        pub fn set(&mut self, pos: usize, val: usize) {
-            self.0[pos] = Cell::new(val);
+        pub fn run_on(&mut self, input: Option<i64>) -> Vec<i64> {
+            let mut ptr = 0;
+            let mut output = Vec::new();
+            loop {
+                if ptr >= self.0.len() {
+                    panic!("overran memory")
+                }
+                match self.get(ptr as i64) {
+                    99 => break,
+                    n => {
+                        let (op, modes) = parse_op(n.try_into().unwrap());
+                        match op {
+                            Op::Add => {
+                                let x = self.read_param(ptr + 1, modes[0]);
+                                let y = self.read_param(ptr + 2, modes[1]);
+                                let v = x + y;
+                                self.write_result(ptr + 3, modes[2], v)
+                            }
+                            Op::Mul => {
+                                let x = self.read_param(ptr + 1, modes[0]);
+                                let y = self.read_param(ptr + 2, modes[1]);
+                                let v = x * y;
+                                self.write_result(ptr + 3, modes[2], v)
+                            }
+                            Op::Save => {
+                                let input = input.expect("no input provided");
+                                self.write_result(ptr + 1, modes[0], input)
+                            }
+                            Op::Return => {
+                                let ret = self.read_param(ptr + 1, modes[0]);
+                                output.push(ret);
+                            }
+                        };
+                        ptr += op.num_params() + 1;
+                    }
+                };
+            }
+            output
         }
 
-        //        fn read_param<'a>(&'a mut self, pos: usize, mode: ParamMode) -> &'a mut usize {
-        //            match mode {
-        //                Position => self.0.get_mut(pos).map(|c| c.get_mut()).unwrap(),
-        //                Immediate => self.0.get(pos).map(|c| &mut c.get()).unwrap(),
-        //            }
-        //        }
+        fn read_param(&self, index: usize, mode: ParamMode) -> i64 {
+            match mode {
+                ParamMode::Position => self.0[self.0[index as usize] as usize],
+                ParamMode::Immediate => self.0[index as usize],
+            }
+        }
+
+        fn write_result(&mut self, index: usize, mode: ParamMode, value: i64) {
+            match mode {
+                ParamMode::Position => {
+                    let position = self.0[index as usize];
+                    self.0[position as usize] = value;
+                }
+                ParamMode::Immediate => panic!("can't write in immediate mode"),
+            }
+        }
+
+        pub fn get(&self, index: i64) -> i64 {
+            self.0[index as usize]
+        }
+
+        pub fn set(&mut self, index: i64, value: i64) {
+            self.0[index as usize] = value
+        }
     }
 
-    #[derive(Clone)]
+    enum Op {
+        Add,
+        Mul,
+        Save,
+        Return,
+    }
+
+    impl Op {
+        fn num_params(&self) -> usize {
+            match self {
+                Op::Add => 3,
+                Op::Mul => 3,
+                Op::Save => 1,
+                Op::Return => 1,
+            }
+        }
+    }
+
+    impl From<usize> for Op {
+        fn from(n: usize) -> Self {
+            match n {
+                1 => Op::Add,
+                2 => Op::Mul,
+                3 => Op::Save,
+                4 => Op::Return,
+                _ => panic!("unrecognised opcode"),
+            }
+        }
+    }
+
+    #[derive(Clone, Copy)]
     enum ParamMode {
         Position,
         Immediate,
     }
 
-    enum Operation {
-        Add(Vec<ParamMode>),
-        Mul(Vec<ParamMode>),
+    impl From<usize> for ParamMode {
+        fn from(n: usize) -> Self {
+            match n {
+                0 => ParamMode::Position,
+                1 => ParamMode::Immediate,
+                _ => panic!("unrecognised parameter mode"),
+            }
+        }
     }
 
-    impl Operation {
-        fn from_code(code: &usize) -> Operation {
-            let mut mode_code = *code / 100;
-            let mut modes = Vec::new();
-            let mode_code_iter = std::iter::from_fn(|| {
-                let next = mode_code % 10;
-                mode_code /= 10;
-                Some(next)
-            })
-            .take(Self::params_from_code(&(code % 100)));
-            for d in mode_code_iter {
-                match d {
-                    0 => modes.push(Position),
-                    1 => modes.push(Immediate),
-                    _ => panic!(),
-                }
-            }
-            match code % 100 {
-                1 => Add(modes),
-                2 => Mul(modes),
-                _ => panic!(),
+    impl Default for ParamMode {
+        fn default() -> Self {
+            ParamMode::Position
+        }
+    }
+
+    fn parse_op(code: usize) -> (Op, Vec<ParamMode>) {
+        let op = Op::from(code % 100);
+
+        let mut mode_code = code / 100;
+        let modes = std::iter::from_fn(|| {
+            let next = mode_code % 10;
+            mode_code /= 10;
+            Some(next)
+        })
+        .take(op.num_params())
+        .map(|d| ParamMode::from(d))
+        .collect();
+
+        (op, modes)
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+
+        #[test]
+        fn basics() {
+            let tests: &[(&[i64], &[i64])] = &[
+                (&[1, 0, 0, 0, 99], &[2, 0, 0, 0, 99]),
+                (&[2, 3, 0, 3, 99], &[2, 3, 0, 6, 99]),
+                (&[2, 4, 4, 5, 99, 0], &[2, 4, 4, 5, 99, 9801]),
+                (
+                    &[1, 1, 1, 4, 99, 5, 6, 0, 99],
+                    &[30, 1, 1, 4, 2, 5, 6, 0, 99],
+                ),
+                (
+                    &[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50],
+                    &[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
+                ),
+            ];
+            for (input, expected) in tests {
+                let (mut mem, expected) = (Memory::new(&input), Memory::new(&expected));
+                mem.run();
+                assert_eq!(mem, expected);
             }
         }
 
-        fn params_from_code(code: &usize) -> usize {
-            match code {
-                1 => 3,
-                2 => 3,
-                _ => panic!(),
-            }
+        #[test]
+        fn parameter_modes() {
+            let mut mem = Memory::new(&[1002, 4, 3, 4, 33]);
+            mem.run();
+            assert_eq!(mem, Memory::new(&[1002, 4, 3, 4, 99]));
         }
 
-        fn params(&self) -> usize {
-            match self {
-                Add(_) => 3,
-                Mul(_) => 3,
-                _ => panic!(),
-            }
-        }
-
-        fn apply(&self, mut params: Vec<&mut usize>, mem: &Memory) {
-            match self {
-                Add(_) => {
-                    let mut out = params[2];
-                    out = *params[0] + *params[1];
-                }
-                Mul(_) => {
-                    let mut out = params[2];
-                    out = *params[0] * *params[1];
-                }
-            }
-        }
-
-        fn read_params<'a>(&self, mem: &'a mut Memory, cur: &usize) -> Vec<&'a mut usize> {
-            match self {
-                Add(m) => Self::read_params_by_mode(mem, cur, m),
-                Mul(m) => Self::read_params_by_mode(mem, cur, m),
-            }
-        }
-
-        fn read_params_by_mode<'a>(
-            mem: &'a mut Memory,
-            cur: &usize,
-            modes: &Vec<ParamMode>,
-        ) -> Vec<&'a mut usize> {
-            let mut params = Vec::with_capacity(modes.len());
-            for (i, mode) in modes.iter().enumerate() {
-                let pos = cur + i + 1;
-                let mut owned: usize;
-                let p = match mode {
-                    Position => mem.0.get_mut(pos).unwrap().get_mut(),
-                    Immediate => {
-                        owned = mem.0.get(pos).unwrap().get();
-                        &mut owned
-                    }
-                };
-                params.push(p);
-            }
-            params
-        }
-
-        fn run(&self, cur: &usize, mem: &mut Memory) {
-            let params = self.read_params(mem, cur);
-            self.apply(params, mem);
+        #[test]
+        fn save_return() {
+            let mut mem = Memory::new(&[3, 0, 4, 0, 99]);
+            assert_eq!(mem.run_on(Some(1066)), vec![1066]);
         }
     }
 }

@@ -1,43 +1,34 @@
-use aoc19::computer;
-use aoc19::computer::Memory;
+use aoc19::intcode::{parse_memory, Memory};
 use aoc19::util::print_answers;
 use std::error::Error;
 
 fn main() -> anyhow::Result<()> {
-    let inputs: Vec<usize> = parse_commas("inputs/2")?;
+    let inputs = parse_memory("inputs/2")?;
     print_answers(2, &inputs, f1, f2);
     Ok(())
 }
 
-fn parse_commas(path: &str) -> anyhow::Result<Vec<usize>> {
-    let s = std::fs::read_to_string(path)?;
-    let mut out = Vec::new();
-    for i in s.trim_end().split(',') {
-        out.push(i.parse()?);
-    }
-    Ok(out)
-}
-
-fn f1(input: &[usize]) -> usize {
-    let mem = Memory::new(input);
+fn f1(input: &[i64]) -> i64 {
+    let mut mem = Memory::new(input);
     mem.set(1, 12);
     mem.set(2, 2);
-    computer::run(mem).get(0)
+    mem.run();
+    mem.get(0)
 }
 
-fn f2(input: &[usize]) -> usize {
-    const GOAL: usize = 19690720;
-    let max = input.len();
+fn f2(input: &[i64]) -> i64 {
+    const GOAL: i64 = 19690720;
+    let max = input.len() as i64;
     for noun in 0..max {
         for verb in 0..max {
-            let mem = Memory::new(input);
+            let mut mem = Memory::new(input);
             mem.set(1, noun);
             mem.set(2, verb);
-            let out = computer::run(mem).get(0);
-            if out == GOAL {
+            mem.run();
+            if mem.get(0) == GOAL {
                 return 100 * noun + verb;
             }
         }
     }
-    unreachable!()
+    panic!("never found an answer")
 }
