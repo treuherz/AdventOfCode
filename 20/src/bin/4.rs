@@ -10,7 +10,7 @@ use std::collections::HashMap;
 fn main() -> anyhow::Result<()> {
     let inputs: Vec<String> = parse("inputs/4")?;
     let passports = parse_passports(&inputs);
-    print_answers(&passports, f1, f2);
+    print_answers(4, &passports, f1, f2);
     Ok(())
 }
 

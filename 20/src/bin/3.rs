@@ -3,7 +3,7 @@ use aoc20::util::{parse, print_answers};
 fn main() -> anyhow::Result<()> {
     let inputs: Vec<String> = parse("inputs/3")?;
     let map = Map::from_inputs(&inputs);
-    print_answers(&map, f1, f2);
+    print_answers(3, &map, f1, f2);
     Ok(())
 }
 

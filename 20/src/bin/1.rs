@@ -2,7 +2,7 @@ use aoc20::util::{parse, print_answers};
 
 fn main() -> std::io::Result<()> {
     let inputs: Vec<i64> = parse("inputs/1")?;
-    print_answers(&inputs, f1, f2);
+    print_answers(1, &inputs, f1, f2);
     Ok(())
 }
 
