@@ -1,4 +1,4 @@
-use aoc19::intcode::{parse_memory, Memory};
+use aoc19::intcode::{parse_memory, Computer};
 use aoc19::util::print_answers;
 use std::error::Error;
 
@@ -9,7 +9,7 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn f1(input: &[i64]) -> i64 {
-    let mut mem = Memory::new(input);
+    let mut mem = Computer::new(input);
     mem.set(1, 12);
     mem.set(2, 2);
     mem.run();
@@ -21,7 +21,7 @@ fn f2(input: &[i64]) -> i64 {
     let max = input.len() as i64;
     for noun in 0..max {
         for verb in 0..max {
-            let mut mem = Memory::new(input);
+            let mut mem = Computer::new(input);
             mem.set(1, noun);
             mem.set(2, verb);
             mem.run();

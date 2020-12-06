@@ -1,4 +1,4 @@
-use aoc19::intcode::{parse_memory, Memory};
+use aoc19::intcode::{parse_memory, Computer};
 use aoc19::util::print_answers;
 
 fn main() -> anyhow::Result<()> {
@@ -8,12 +8,14 @@ fn main() -> anyhow::Result<()> {
 }
 
 fn part1(input: &[i64]) -> i64 {
-    let mut mem = Memory::new(input);
+    let mut mem = Computer::new(input);
     let output = mem.run_on(Some(1));
     assert!(output.iter().take(output.len() - 2).all(|&n| n == 0));
     *output.last().unwrap()
 }
 
 fn part2(input: &[i64]) -> i64 {
-    todo!()
+    let mut mem = Computer::new(input);
+    let output = mem.run_on(Some(5));
+    output[0]
 }
