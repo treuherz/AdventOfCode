@@ -2,6 +2,7 @@ pub mod util {
     use anyhow::anyhow;
     use std::borrow::Borrow;
     use std::str::FromStr;
+    use std::time::Instant;
 
     pub fn parse<T>(path: &str) -> anyhow::Result<Vec<T>>
     where
@@ -25,9 +26,14 @@ pub mod util {
         F2: Fn(&J) -> O2,
     {
         println!("─── Day {}, Part 1 ───", day);
-        println!("{}", part1(input.borrow()));
-        println!();
+        let now = Instant::now();
+        let a1 = part1(input.borrow());
+        let d1 = now.elapsed();
+        println!("{} (in {:?})\n", a1, d1);
         println!("─── Day {}, Part 2 ───", day);
-        println!("{}", part2(input.borrow()));
+        let now = Instant::now();
+        let a2 = part2(input.borrow());
+        let d2 = now.elapsed();
+        println!("{} (in {:?})\n", a2, d2);
     }
 }
