@@ -30,12 +30,8 @@ fn part1(inputs: &[u64]) -> u64 {
 fn part2(inputs: &[u64]) -> u64 {
     let target = part1(inputs);
 
-    'run_from: for mut i in (0..inputs.len() - 1) {
-        'run_to: for j in (i + 2..inputs.len()) {
-            if inputs[j] >= target {
-                i = j +1;
-                continue 'run_from;
-            }
+    'run_from: for i in 0..inputs.len() - 1 {
+        for j in i + 2..inputs.len() {
             let sum: u64 = inputs[i..j].iter().sum();
             if sum == target {
                 let (min, max) = inputs[i..j].iter().minmax().into_option().unwrap();
