@@ -86,11 +86,13 @@ impl Pattern {
             .count()
     }
 
+
     fn count_occupied_distant(&self, (y, x): (usize, usize)) -> usize {
         let (y, x): (isize, isize) = (y as isize, x as isize);
         let (len_y, len_x) = self.dim();
 
-        let neighbourhood: Vec<fn(isize, isize) -> (isize, isize)> = vec![
+        type Transform = fn(isize, isize) -> (isize, isize);
+        let neighbourhood: Vec<Transform>  = vec![
             |y, x| (y - 1, x - 1),
             |y, x| (y - 1, x),
             |y, x| (y - 1, x + 1),

@@ -33,7 +33,7 @@ fn part2(inputs: &[u64]) -> u64 {
     let start = 0;
     let end = inputs.iter().max().unwrap() + 3;
     let mut inputs: Vec<u64> = [&[start], inputs, &[end]].concat();
-    inputs.sort();
+    inputs.sort_unstable();
 
     let mut paths: Vec<u64> = vec![1, 1];
     if inputs[2] - inputs[0] <= 3 {

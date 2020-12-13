@@ -48,7 +48,7 @@ fn part2(inputs: &[String]) -> usize {
         let matched: Vec<(usize, usize)> = buses
             .iter()
             .take_while(|(idx, id)| (t + idx) % id == 0)
-            .map(|&tuple| tuple)
+            .copied()
             .collect();
         if matched.len() == buses.len() {
             break t;
