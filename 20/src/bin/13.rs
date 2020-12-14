@@ -10,7 +10,7 @@ fn main() -> anyhow::Result<()> {
     let now = Instant::now();
     let inputs: Vec<String> = parse("inputs/13")?;
     assert_eq!(inputs.len(), 2);
-    print_answers(12, &inputs, part1, part2);
+    print_answers(13, &inputs, part1, part2);
     println!("Overall time: {:?}", now.elapsed());
     Ok(())
 }
