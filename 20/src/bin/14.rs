@@ -1,17 +1,10 @@
 use std::{
-    collections::{
-        HashMap,
-        HashSet,
-    },
-    convert::TryInto,
-    ops::{BitAndAssign, BitOrAssign},
-    str::{from_utf8, FromStr},
+    collections::HashMap,
+    str::FromStr,
     time::Instant,
 };
 
 use bitvec::prelude::*;
-use itertools::Itertools;
-use nom::number::complete::float;
 use regex::Regex;
 
 use aoc20::util::{parse, print_answers};
@@ -64,7 +57,7 @@ impl FromStr for Instruction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with("mask") {
-            let mask_str: &str = from_utf8(&s.as_bytes()[7..43]).unwrap();
+            let mask_str: &str = &s[7..43];
             let mut mask = [Value::Floating; 36];
             for (i, c) in mask_str.char_indices() {
                 match c {
@@ -152,7 +145,7 @@ fn part2(inputs: &[Instruction]) -> u128 {
                 mask = new_mask;
             }
             Instruction::Mem { address, value } => {
-                let mut bits: BitVec<Lsb0, u8> =
+                let bits: BitVec<Lsb0, u8> =
                     address.view_bits::<Lsb0>().iter().take(36).collect();
                 let mut floating_idx: Vec<usize> = Vec::new();
                 let template: BitVec<Lsb0, u8> = bits
