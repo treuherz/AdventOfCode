@@ -1,13 +1,15 @@
-use std::collections::HashSet;
-use std::{collections::HashMap, time::Instant};
+use std::{
+    cmp::{max, min},
+    collections::HashMap,
+    collections::HashSet,
+    fmt::{Display, Formatter, Write},
+    ops::Not,
+    time::Instant,
+};
 
-use lazy_static::lazy_static;
+use itertools::iproduct;
 
 use aoc20::util::{parse, print_answers};
-use nom::lib::std::fmt::Formatter;
-use std::cmp::{max, min};
-use std::fmt::{Display, Write};
-use std::ops::Not;
 
 fn main() -> anyhow::Result<()> {
     let now = Instant::now();
@@ -48,35 +50,15 @@ impl Point {
 type Offset = (i64, i64, i64, i64);
 
 fn neighbours_xyz() -> Vec<Offset> {
-    let mut v: Vec<Offset> = Vec::with_capacity(3usize.pow(3) - 1);
-    for x in -1..=1 {
-        for y in -1..=1 {
-            for z in -1..=1 {
-                if x == 0 && y == 0 && z == 0 {
-                    continue;
-                }
-                v.push((x, y, z, 0));
-            }
-        }
-    }
-    v
+    iproduct!(-1..=1, -1..=1, -1..=1, 0..=0)
+        .filter(|&(x, y, z, _)| x != 0 || y != 0 || z != 0)
+        .collect()
 }
 
 fn neighbours_xyzw() -> Vec<Offset> {
-    let mut v: Vec<Offset> = Vec::with_capacity(3usize.pow(4) - 1);
-    for x in -1..=1 {
-        for y in -1..=1 {
-            for z in -1..=1 {
-                for w in -1..=1 {
-                    if x == 0 && y == 0 && z == 0 && w == 0 {
-                        continue;
-                    }
-                    v.push((x, y, z, w));
-                }
-            }
-        }
-    }
-    v
+    iproduct!(-1..=1, -1..=1, -1..=1, -1..=1)
+        .filter(|&(x, y, z, w)| x != 0 || y != 0 || z != 0 || w != 0)
+        .collect()
 }
 
 struct Board {
@@ -88,7 +70,7 @@ struct Board {
 }
 
 impl Board {
-    pub fn new(plane: &Vec<Vec<bool>>, neighbourhood: &[Offset]) -> Board {
+    pub fn new(plane: &[Vec<bool>], neighbourhood: &[Offset]) -> Board {
         let mut b = Board {
             live: HashSet::new(),
             counts: HashMap::new(),
@@ -112,12 +94,11 @@ impl Board {
     }
 
     pub fn step(&mut self) {
-        dbg!(self.gen);
         let mut newborns: Vec<Point> = Vec::new();
         let mut deaths: Vec<Point> = Vec::new();
         for p in self.live.iter() {
-            let n = *self.counts.get(p).unwrap_or(&0);
-            if n < 2 || 3 < n {
+            let n = self.counts.get(p).unwrap_or(&0);
+            if (2..=3).contains(n).not() {
                 deaths.push(*p)
             }
         }
@@ -197,25 +178,50 @@ impl Board {
 
 impl Display for Board {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        const MIN_GUTTER: usize = 3;
+
+        writeln!(f, "Generation {}", self.gen)?;
+
         let (a, b) = self.bbox;
+        let mut x_width = (b.x - a.x + 1) as usize + MIN_GUTTER;
+
         for z in a.z..=b.z {
-            write!(f, "z = {}\n", z)?;
-            for x in a.x - 1..=b.x {
-                let c = if x == 0 { '0' } else { ' ' };
-                f.write_char(c)?;
+            // z,w coordinate line
+            // build up list of coordinate strings and then print them all
+            // padded to the same width
+            let mut fragments = Vec::new();
+            for w in a.w..=b.w {
+                let s = format!("z={} w={}", z, w);
+                x_width = max(s.len() + MIN_GUTTER, x_width);
+                fragments.push(s);
             }
-            f.write_char('\n')?;
+            for s in fragments {
+                write!(f, "{:width$}", s, width = x_width)?;
+            }
+            writeln!(f)?;
+
+            // x-origin line, repeated for each plane
+            for _ in a.w..=b.w {
+                let left_pad = (a.x - 1).abs() as usize;
+                write!(f, "{:l$}{:r$}", "", '0', l = left_pad, r = x_width - left_pad)?;
+            }
+            writeln!(f)?;
+
+            // the planes
             for y in a.y..=b.y {
-                let c = if y == 0 { '0' } else { ' ' };
-                f.write_char(c)?;
-                for x in a.x..=b.x {
-                    let p = Point { x: x, y: y, z: z, w: 0 };
-                    let c = if self.live.contains(&p) { '#' } else { '.' };
-                    f.write_char(c)?;
+                for w in a.w..=b.w {
+                    // y-origin column
+                    f.write_char(if y == 0 { '0' } else { ' ' })?;
+
+                    for x in a.x..=b.x {
+                        let p = Point { x, y, z, w };
+                        f.write_char(if self.live.contains(&p) { '#' } else { '.' })?;
+                    }
+                    write!(f, "{:width$}", "", width = x_width - (b.x - a.x + 2) as usize)?;
                 }
-                f.write_char('\n')?;
+                writeln!(f)?;
             }
-            f.write_char('\n')?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -255,10 +261,12 @@ fn part2(inputs: &[String]) -> usize {
 
     let mut b = Board::new(&plane, &neighbours_xyzw());
 
-    for _ in 1..=6 {
-        // println!("{}", b);
+    for _ in 1..=3 {
+        println!("{}", b);
         b.step();
     }
+
+    println!("{}", b);
 
     b.live_count()
 }
