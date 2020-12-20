@@ -1,6 +1,15 @@
+#![feature(or_patterns)]
+#![feature(box_syntax)]
+#![feature(box_patterns)]
+
 use std::{ops::Not, time::Instant};
 
+use anyhow::anyhow;
 use aoc20::util::{parse, print_answers};
+use itertools::Itertools;
+use nom::lib::std::fmt::{Debug, Formatter};
+use std::convert::TryInto;
+use std::fmt::Write;
 
 fn main() -> anyhow::Result<()> {
     let now = Instant::now();
@@ -10,12 +19,148 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Op {
-    Add,
     Multiply,
+    Add,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Debug)]
+enum Node {
+    Op {
+        op: Op,
+        children: (Box<Node>, Box<Node>),
+    },
+    Num {
+        n: u64,
+    },
+}
+
+#[derive(thiserror::Error, Debug)]
+enum ParseError {
+    #[error("unexpected end of input")]
+    EndOfInput,
+    #[error("token {0:?} in unexpected position")]
+    UnexpectedToken(Token),
+}
+type Result<'a> = std::result::Result<(&'a [Token], Node), ParseError>;
+
+struct LeftAssoc {}
+
+impl LeftAssoc {
+    fn parse_atom(toks: &[Token]) -> Result {
+        match toks.first() {
+            Some(Token::OpenParen) => {
+                let (rem, inner) = Self::parse(&toks[1..])?;
+                Ok((&rem[1..], inner))
+            }
+            Some(Token::Num(n)) => Ok((&toks[1..], Node::Num { n: *n })),
+            Some(tok) => Err(ParseError::UnexpectedToken(*tok)),
+            None => Err(ParseError::EndOfInput),
+        }
+    }
+
+    fn parse_right(left: Node, toks: &[Token]) -> Result {
+        match toks.first() {
+            Some(tok @ Token::Plus | tok @ Token::Times) => {
+                let (rem, right) = Self::parse_atom(&toks[1..])?;
+                Ok((
+                    rem,
+                    Node::Op {
+                        op: match tok {
+                            Token::Plus => Op::Add,
+                            Token::Times => Op::Multiply,
+                            _ => unreachable!(),
+                        },
+                        children: (Box::new(left), Box::new(right)),
+                    },
+                ))
+            }
+            Some(tok) => Err(ParseError::UnexpectedToken(*tok)),
+            None => Err(ParseError::EndOfInput),
+        }
+    }
+
+    fn parse(toks: &[Token]) -> Result {
+        let (mut rem, mut left) = Self::parse_atom(toks)?;
+        loop {
+            let (new_rem, node) = Self::parse_right(left, rem)?;
+
+            rem = new_rem;
+            left = node;
+
+            if rem.len() == 0 || *rem.first().unwrap() == Token::CloseParen {
+                break;
+            }
+        }
+        Ok((rem, left))
+    }
+}
+
+struct AddMult {}
+impl AddMult {
+    fn prec(op: Op) -> u8 {
+        match op {
+            Op::Multiply => 0,
+            Op::Add => 1,
+        }
+    }
+
+    fn parse_atom(toks: &[Token]) -> Result {
+        match toks.first() {
+            Some(Token::OpenParen) => {
+                let (rem, inner) = Self::parse(&toks[1..])?;
+                Ok((&rem[1..], inner))
+            }
+            Some(Token::Num(n)) => Ok((&toks[1..], Node::Num { n: *n })),
+            Some(tok) => Err(ParseError::UnexpectedToken(*tok)),
+            None => Err(ParseError::EndOfInput),
+        }
+    }
+
+    fn parse_expr(mut left: Node, mut toks: &[Token], prec: u8) -> Result {
+        while let Some(op) = toks.first().and_then(|tok| tok.try_into().ok()) {
+            if Self::prec(op) < prec {
+                break;
+            }
+            let (rem, mut right) = Self::parse_atom(&toks[1..])?;
+            toks = rem;
+
+            while let Some(op2) = toks.first().and_then(|tok| tok.try_into().ok()) {
+                if Self::prec(op2) <= Self::prec(op) {
+                    break;
+                }
+                let (rem, right2) = Self::parse_expr(right, &toks, Self::prec(op2))?;
+                toks = rem;
+                right = right2;
+            }
+
+            left = Node::Op {
+                op: op,
+                children: (Box::new((left)), Box::new((right))),
+            }
+        }
+
+        Ok((toks, left))
+    }
+
+    fn parse(toks: &[Token]) -> Result {
+        let (mut rem, mut left) = Self::parse_atom(toks)?;
+        loop {
+            let (new_rem, node) = Self::parse_expr(left, rem, 0)?;
+
+            rem = new_rem;
+            left = node;
+
+            if rem.len() == 0 || *rem.first().unwrap() == Token::CloseParen {
+                break;
+            }
+        }
+        Ok((rem, left))
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 enum Token {
     OpenParen,
     CloseParen,
@@ -49,6 +194,18 @@ impl Into<char> for Token {
     }
 }
 
+impl TryInto<Op> for &Token {
+    type Error = Token;
+
+    fn try_into(self) -> std::result::Result<Op, Token> {
+        match self {
+            Token::Plus => Ok(Op::Add),
+            Token::Times => Ok(Op::Multiply),
+            _ => Err(*self),
+        }
+    }
+}
+
 fn tokens(input: &str) -> Vec<Token> {
     input
         .chars()
@@ -57,73 +214,61 @@ fn tokens(input: &str) -> Vec<Token> {
         .collect()
 }
 
-struct Calculator {
-    expr: String,
-    acc_stack: Vec<Option<u64>>,
-    op_stack: Vec<Option<Op>>,
-}
-
-impl Calculator {
-    fn new() -> Calculator {
-        Calculator {
-            expr: String::new(),
-            acc_stack: vec![None],
-            op_stack: vec![None],
+impl Node {
+    fn evaluate(mut self: Node) -> Node {
+        loop {
+            self = match self {
+                Node::Num { .. } => break self,
+                Node::Op {
+                    op: op,
+                    children: (x, y),
+                } => match (x, y) {
+                    (box Node::Num { n: x }, box Node::Num { n: y }) => Node::Num {
+                        n: match op {
+                            Op::Add => x + y,
+                            Op::Multiply => x * y,
+                        },
+                    },
+                    (x @ box Node::Op { .. }, y) => Node::Op {
+                        op: op,
+                        children: (Box::new(x.evaluate()), y),
+                    },
+                    (x, y @ box Node::Op { .. }) => Node::Op {
+                        op: op,
+                        children: (x, Box::new(y.evaluate())),
+                    },
+                },
+            }
         }
-    }
-
-    fn consume(&mut self, tok: Token) {
-        match tok {
-            Token::OpenParen => {
-                self.acc_stack.push(None);
-                self.op_stack.push(None);
-            }
-            Token::CloseParen => {
-                let n = self.acc_stack.pop().flatten().unwrap();
-                self.apply(n)
-            }
-            Token::Plus => {
-                self.op_stack.push(Some(Op::Add));
-            }
-            Token::Times => {
-                self.op_stack.push(Some(Op::Multiply));
-            }
-            Token::Num(n) => self.apply(n),
-        };
-        self.expr.push(tok.into())
-    }
-
-    fn apply(&mut self, n: u64) {
-        let acc = self.acc_stack.last_mut().unwrap();
-        match self.op_stack.pop().unwrap() {
-            None => {
-                acc.replace(n);
-            }
-            Some(Op::Add) => *acc.as_mut().unwrap() += n,
-            Some(Op::Multiply) => *acc.as_mut().unwrap() *= n,
-        }
-    }
-
-    fn done(mut self) -> Option<u64> {
-        self.acc_stack.pop().unwrap()
     }
 }
 
 fn part1(inputs: &[String]) -> u64 {
     let mut acc = 0;
     for s in inputs {
-        let mut calc = Calculator::new();
-        tokens(&s).iter().for_each(|&tok| {
-            calc.consume(tok);
-            dbg!(&calc.expr);
-        });
-        acc += calc.done().unwrap()
+        let toks = tokens(&s);
+        let root = LeftAssoc::parse(&toks).unwrap().1;
+        if let Node::Num { n } = root.evaluate() {
+            acc += n;
+        } else {
+            panic!("tree didn't evaluate fully")
+        }
     }
     acc
 }
 
-fn part2(inputs: &[String]) -> usize {
-    todo!()
+fn part2(inputs: &[String]) -> u64 {
+    let mut acc = 0;
+    for s in inputs {
+        let toks = tokens(&s);
+        let root = AddMult::parse(&toks).unwrap().1;
+        if let Node::Num { n } = root.evaluate() {
+            acc += n;
+        } else {
+            panic!("tree didn't evaluate fully")
+        }
+    }
+    acc
 }
 
 #[cfg(test)]
@@ -137,6 +282,18 @@ mod tests {
 
         for (input, expected) in cases {
             assert_eq!(super::part1(&input), expected);
+        }
+    }
+
+    #[test]
+    fn part2() {
+        let cases = vec![
+            (vec!["1 + 2 * 3 + 4 * 5 + 6".to_string()], 231),
+            (vec!["1 + (2 * 3) + (4 * (5 + 6))".to_string()], 51),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(super::part2(&input), expected);
         }
     }
 }
