@@ -2,14 +2,14 @@
 #![feature(box_syntax)]
 #![feature(box_patterns)]
 
-use std::{ops::Not, time::Instant};
+use std::{
+    ops::Not,
+    time::Instant,
+    fmt::{Debug,},
+    convert::TryInto,
+};
 
-use anyhow::anyhow;
 use aoc20::util::{parse, print_answers};
-use itertools::Itertools;
-use nom::lib::std::fmt::{Debug, Formatter};
-use std::convert::TryInto;
-use std::fmt::Write;
 
 fn main() -> anyhow::Result<()> {
     let now = Instant::now();
@@ -89,7 +89,7 @@ impl LeftAssoc {
             rem = new_rem;
             left = node;
 
-            if rem.len() == 0 || *rem.first().unwrap() == Token::CloseParen {
+            if rem.is_empty() || *rem.first().unwrap() == Token::CloseParen {
                 break;
             }
         }
@@ -136,8 +136,8 @@ impl AddMult {
             }
 
             left = Node::Op {
-                op: op,
-                children: (Box::new((left)), Box::new((right))),
+                op,
+                children: (Box::new(left), Box::new(right)),
             }
         }
 
@@ -152,7 +152,7 @@ impl AddMult {
             rem = new_rem;
             left = node;
 
-            if rem.len() == 0 || *rem.first().unwrap() == Token::CloseParen {
+            if rem.is_empty() || *rem.first().unwrap() == Token::CloseParen {
                 break;
             }
         }
@@ -220,7 +220,7 @@ impl Node {
             self = match self {
                 Node::Num { .. } => break self,
                 Node::Op {
-                    op: op,
+                    op,
                     children: (x, y),
                 } => match (x, y) {
                     (box Node::Num { n: x }, box Node::Num { n: y }) => Node::Num {
@@ -230,11 +230,11 @@ impl Node {
                         },
                     },
                     (x @ box Node::Op { .. }, y) => Node::Op {
-                        op: op,
+                        op,
                         children: (Box::new(x.evaluate()), y),
                     },
                     (x, y @ box Node::Op { .. }) => Node::Op {
-                        op: op,
+                        op,
                         children: (x, Box::new(y.evaluate())),
                     },
                 },
