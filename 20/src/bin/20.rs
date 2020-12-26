@@ -1,15 +1,15 @@
 #![feature(or_patterns)]
 
 use aoc20::util::{parse, print_answers};
-use bitvec::prelude::*;
 use itertools::iproduct;
-use num::integer::Roots;
+use ndarray::{s, Array2};
+use num::integer::div_rem;
+use num::Integer;
 use regex::Regex;
 use std::{
-    convert::TryInto,
-    hash::{Hash, Hasher},
     cmp::min,
     collections::{HashMap, HashSet},
+    hash::{Hash, Hasher},
     time::Instant,
 };
 
@@ -51,73 +51,69 @@ impl Side {
     }
 }
 
-type Edge = bitarr!(for 10, in Lsb0, u16);
+type Edge = Vec<bool>;
 
 type TileId = u64;
 
 #[derive(Clone, Hash, Debug)]
 struct Tile {
     id: TileId,
-    bits: bitarr!(for 100),
+    data: Array2<bool>,
 }
 
 impl Tile {
     fn new(id: TileId, strings: &[String]) -> Tile {
-        let mut bits = bitarr![0; 100];
+        let data = Tile::parse_strings(strings);
+        Tile { id, data }
+    }
+
+    fn parse_strings(strings: &[String]) -> Array2<bool> {
+        let mut data = Array2::from_elem((strings.len(), strings.len()), false);
         for (y, line) in strings.iter().enumerate() {
             for (x, c) in line.chars().enumerate() {
                 if c == '#' {
-                    bits.set(y * 10 + x, true);
+                    data[[y, x]] = true;
                 }
             }
         }
-        Tile { id, bits }
+        data
     }
 
     fn edge(&self, side: Side) -> Edge {
         match side {
-            Side::Top => {
-                let mut bits = Edge::zeroed();
-                bits[0..10].for_each(|idx, _| self.bits[idx]);
-                bits
-            }
-            Side::Right => {
-                let mut bits = Edge::zeroed();
-                bits[0..10].for_each(|idx, _| self.bits[idx * 10 + 9]);
-                bits
-            }
-            Side::Bottom => {
-                let mut bits = Edge::zeroed();
-                bits[0..10].for_each(|idx, _| self.bits[idx + 90]);
-                bits
-            }
-            Side::Left => {
-                let mut bits = Edge::zeroed();
-                bits[0..10].for_each(|idx, _| self.bits[idx * 10]);
-                bits
-            }
+            Side::Top => self.data.row(0).to_vec(),
+            Side::Right => self.data.column(self.data.ncols() - 1).to_vec(),
+            Side::Bottom => self.data.row(self.data.nrows() - 1).to_vec(),
+            Side::Left => self.data.column(0).to_vec(),
         }
     }
 
     fn transformed_edge(&self, rot: Rotations, flip: bool, side: Side) -> Edge {
         use {Rotations::*, Side::*};
 
-        let rev = |mut e: Edge| -> Edge {
-            e[0..10].reverse();
+        let rev = |e: Edge| -> Edge {
+            let mut e = e.clone();
+            e.reverse();
             e
         };
 
-        let cw = |side: Side, rot: Rotations| Side::at(side.n() + 4 - rot.n());
-
         match (side, rot, flip) {
-            (Top | Bottom, Zero, false) => self.edge(side),
-            (Top | Bottom, Once, false) => rev(self.edge(cw(side, rot))),
-            (Top | Bottom, Twice, false) => rev(self.edge(cw(side, rot))),
-            (Top | Bottom, Thrice, false) => self.edge(cw(side, rot)),
-            (Right | Left, Zero, false) => self.edge(side),
-            (Right | Left, Once, false) => self.edge(cw(side, rot)),
-            (Right | Left, Twice, false) => rev(self.edge(cw(side, rot))),
-            (Right | Left, Thrice, false) => rev(self.edge(cw(side, rot))),
+            (Top, Zero, false) => self.edge(Top),
+            (Top, Once, false) => rev(self.edge(Left)),
+            (Top, Twice, false) => rev(self.edge(Bottom)),
+            (Top, Thrice, false) => self.edge(Right),
+            (Right, Zero, false) => self.edge(Right),
+            (Right, Once, false) => self.edge(Top),
+            (Right, Twice, false) => rev(self.edge(Left)),
+            (Right, Thrice, false) => rev(self.edge(Bottom)),
+            (Bottom, Zero, false) => self.edge(Bottom),
+            (Bottom, Once, false) => rev(self.edge(Right)),
+            (Bottom, Twice, false) => rev(self.edge(Top)),
+            (Bottom, Thrice, false) => self.edge(Left),
+            (Left, Zero, false) => self.edge(Left),
+            (Left, Once, false) => self.edge(Bottom),
+            (Left, Twice, false) => rev(self.edge(Right)),
+            (Left, Thrice, false) => rev(self.edge(Top)),
             (Top, Zero, true) => rev(self.edge(Top)),
             (Top, Once, true) => rev(self.edge(Right)),
             (Top, Twice, true) => self.edge(Bottom),
@@ -172,9 +168,30 @@ impl PlacedTile {
             flip: false,
         }
     }
+
     fn edge(&self, side: Side) -> Edge {
         self.tile.transformed_edge(self.rot, self.flip, side)
     }
+
+    fn transformed(&self) -> Array2<bool> {
+        let flip = self.flip;
+        let rot = self.rot;
+        let data = &self.tile.data;
+        transform(data, flip, rot)
+    }
+}
+
+fn transform(data: &Array2<bool>, flip: bool, rot: Rotations) -> Array2<bool> {
+    let step = if flip { -1 } else { 1 };
+    let flipped = data.slice(s![.., ..;step]);
+    let rotated = match rot {
+        Rotations::Zero => flipped.to_owned(),
+        Rotations::Once => flipped.t().slice(s![.., ..;-1]).to_owned(),
+        Rotations::Twice => flipped.slice(s![..;-1, ..;-1]).to_owned(),
+        Rotations::Thrice => flipped.t().slice(s![..;-1, ..]).to_owned(),
+    };
+
+    rotated
 }
 
 fn corners(tiles: &HashMap<TileId, Tile>) -> Vec<u64> {
@@ -207,13 +224,13 @@ fn unique_edge_counts(tiles: &HashMap<TileId, Tile>) -> HashMap<TileId, u8> {
     unique_edges
 }
 
-fn build_edge_lookup(tiles: &HashMap<TileId, Tile>) -> HashMap<u16, HashSet<TileId>> {
-    let mut edges_tiles: HashMap<u16, HashSet<TileId>> = HashMap::new();
+fn build_edge_lookup(tiles: &HashMap<TileId, Tile>) -> HashMap<u64, HashSet<TileId>> {
+    let mut edges_tiles: HashMap<u64, HashSet<TileId>> = HashMap::new();
     for block in tiles.values() {
         for side in (0..4).map(Side::at) {
             let edge = block.edge(side);
 
-            let k = key(edge);
+            let k = key(&edge);
 
             if let Some(set) = edges_tiles.get_mut(&k) {
                 set.insert(block.id);
@@ -227,14 +244,17 @@ fn build_edge_lookup(tiles: &HashMap<TileId, Tile>) -> HashMap<u16, HashSet<Tile
     edges_tiles
 }
 
-fn key(edge: Edge) -> u16 {
+fn key(edge: &Edge) -> u64 {
+    let a = hash(edge);
+
     let rev = {
-        let mut bits = edge.clone();
-        bits[0..10].reverse();
-        bits
+        let mut e = edge.clone();
+        e.reverse();
+        e
     };
-    let k = min(edge.unwrap()[0], rev.unwrap()[0]);
-    k
+    let b = hash(&rev);
+
+    min(a, b)
 }
 
 fn parse_tiles(inputs: &[String]) -> HashMap<TileId, Tile> {
@@ -270,10 +290,8 @@ fn part1(tiles: &HashMap<TileId, Tile>) -> u64 {
 fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
     use Side::*;
 
-    let corners = corners(tiles);
     let edge_lookup = build_edge_lookup(tiles);
-    let is_unique = |edge: Edge| -> bool { edge_lookup.get(&key(edge)).unwrap().len() == 1 };
-    let unique_edge_counts = unique_edge_counts(tiles);
+    let is_unique = |edge: Edge| -> bool { edge_lookup.get(&key(&edge)).unwrap().len() == 1 };
 
     let mut tiles = tiles.clone();
     let mut nw = PlacedTile::new(tiles.remove(&2593).unwrap());
@@ -306,7 +324,7 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
             if i < 12 {
                 let to_match = arrangement[i - 1].edge(Right);
                 edge_lookup
-                    .get(&key(to_match))
+                    .get(&key(&to_match))
                     .map(|set| set.iter())
                     .and_then(|it| {
                         it.filter(|&id| tiles.contains_key(id))
@@ -316,7 +334,7 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
             } else if i % 12 == 0 {
                 let to_match = arrangement[i - 12].edge(Bottom);
                 edge_lookup
-                    .get(&key(to_match))
+                    .get(&key(&to_match))
                     .map(|set| set.iter())
                     .and_then(|it| {
                         it.filter(|&id| tiles.contains_key(id))
@@ -329,11 +347,11 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
                     arrangement[i - 12].edge(Bottom),
                 );
                 let intersection = edge_lookup
-                    .get(&key(to_match.0))
+                    .get(&key(&to_match.0))
                     .and_then(|set1| {
                         edge_lookup
-                            .get(&key(to_match.1))
-                            .map(|set2| set1.intersection(set1))
+                            .get(&key(&to_match.1))
+                            .map(|set2| set1.intersection(set2))
                     })
                     .unwrap();
                 intersection
@@ -393,10 +411,63 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
         66020135789767
     );
 
-    todo!()
+    let mut image = Array2::from_elem((8 * 12, 8 * 12), false);
+
+    for (i, tile) in arrangement.iter().enumerate() {
+        let (row, col) = i.div_rem(&12usize);
+        let mut dst = image.slice_mut(s![row * 8..row * 8 + 8, col * 8..col * 8 + 8]);
+        let data = tile.transformed();
+        let src = data.slice(s![1..=8, 1..=8]);
+        dst.iter_mut()
+            .zip(src.iter())
+            .enumerate()
+            .for_each(|(j, (a, b))| *a = *b);
+    }
+
+    for row in image.genrows() {
+        for &b in row.iter() {
+            print!("{}", if b { '#' } else { '.' });
+        }
+        println!();
+    }
+
+    let monster_indices = vec![
+        (0, 18),
+        (1, 0),
+        (1, 5),
+        (1, 6),
+        (1, 11),
+        (1, 12),
+        (1, 17),
+        (1, 18),
+        (1, 19),
+        (2, 1),
+        (2, 4),
+        (2, 7),
+        (2, 10),
+        (2, 13),
+        (2, 16),
+    ];
+    let mut it = transforms();
+    let mut transformed = image.clone();
+    let num_monsters = loop {
+        let num = transformed
+            .windows((3, 20))
+            .into_iter()
+            .filter(|w| monster_indices.iter().all(|&idx| w[idx]))
+            .count();
+        if num != 0 {
+            break num;
+        }
+        let (rot, flip) = it.next().unwrap();
+        transformed = transform(&image, flip, rot);
+    };
+    dbg!(num_monsters);
+
+    image.iter().filter(|&&b| b).count() - monster_indices.len() * num_monsters
 }
 
-fn hash(arrangement: &Vec<PlacedTile>) -> u64 {
+fn hash<H: Hash>(arrangement: &H) -> u64 {
     let h = &mut std::collections::hash_map::DefaultHasher::new();
     arrangement.hash(h);
     h.finish()
@@ -408,7 +479,7 @@ mod tests {
 
     #[test]
     fn edges() {
-        let v: Vec<String> = vec![
+        let data: Vec<String> = strings(vec![
             "..##.#..#.",
             "##..#.....",
             "#...##..#.",
@@ -419,31 +490,28 @@ mod tests {
             "..#....#..",
             "###...#.#.",
             "..###..###",
-        ]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
-        let block = Tile::new(0, &v);
+        ]);
+        let tile = Tile::new(0, &data);
 
         use Side::*;
         assert_eq!(
-            block.edge(Top)[0..10],
-            bits![0, 0, 1, 1, 0, 1, 0, 0, 1, 0],
+            tile.edge(Top),
+            vec![false, false, true, true, false, true, false, false, true, false],
             "Top edge"
         );
         assert_eq!(
-            block.edge(Right)[0..10],
-            bits![0, 0, 0, 1, 0, 1, 1, 0, 0, 1],
+            tile.edge(Right),
+            vec![false, false, false, true, false, true, true, false, false, true],
             "Right edge",
         );
         assert_eq!(
-            block.edge(Bottom)[0..10],
-            bits![0, 0, 1, 1, 1, 0, 0, 1, 1, 1],
+            tile.edge(Bottom),
+            vec![false, false, true, true, true, false, false, true, true, true],
             "Bottom edge"
         );
         assert_eq!(
-            block.edge(Left)[0..10],
-            bits![0, 1, 1, 1, 1, 1, 0, 0, 1, 0],
+            tile.edge(Left),
+            vec![false, true, true, true, true, true, false, false, true, false],
             "Left edge"
         );
     }
@@ -452,7 +520,7 @@ mod tests {
     fn transformed_edge() {
         use {Rotations::*, Side::*};
 
-        let data: Vec<String> = vec![
+        let data: Vec<String> = strings(vec![
             "#.#.#.#.#.",
             "..........",
             "..........",
@@ -463,22 +531,17 @@ mod tests {
             ".........#",
             ".........#",
             ".##.##.###",
-        ]
-            .iter()
-            .map(|s| s.to_string())
-            .collect();
+        ]);
         let tile = Tile::new(0, &data);
 
-        let it = || {
-            iproduct!(
-                [Left, Right, Top, Bottom].iter().cloned(),
-                [Zero, Once, Twice, Thrice].iter().cloned(),
-                [false, true].iter().cloned()
-            )
-        };
+        let it = iproduct!(
+            [Left, Right, Top, Bottom].iter().cloned(),
+            [Zero, Once, Twice, Thrice].iter().cloned(),
+            [false, true].iter().cloned()
+        );
 
-        for (side, rot, flip) in it() {
-            let expected = match (side, rot, flip) {
+        for (side, rot, flip) in it {
+            let expected_str = match (side, rot, flip) {
                 (Top, Zero, false) => "#.#.#.#.#.",
                 (Top, Once, false) => "...#..#..#",
                 (Top, Twice, false) => "###.##.##.",
@@ -513,17 +576,56 @@ mod tests {
                 (Left, Thrice, true) => "#.#.#.#.#.",
             };
 
-            let mut expected_bits = Edge::zeroed();
-            expected_bits[0..10].for_each(|idx, _| expected.chars().nth(idx).unwrap() == '#');
+            let mut expected: Edge = vec![false; 10];
+            for (i, c) in expected_str.chars().enumerate() {
+                expected[i] = c == '#';
+            }
 
-            let actual_bits = tile.transformed_edge(rot, flip, side);
+            let actual = tile.transformed_edge(rot, flip, side);
 
-            assert_eq!(
-                actual_bits, expected_bits,
-                "{:?}, {:?}, {:?}",
-                side, rot, flip
-            );
+            assert_eq!(actual, expected, "{:?}, {:?}, {:?}", side, rot, flip);
         }
     }
-}
 
+    #[test]
+    fn placed_tile_data() {
+        use Rotations::*;
+
+        let data = strings(vec!["##..", ".#..", "....", "...."]);
+        let tile = Tile::new(0, &data);
+
+        let it = iproduct!(
+            [Zero, Once, Twice, Thrice].iter().cloned(),
+            [false, true].iter().cloned()
+        );
+
+        for (rot, flip) in it {
+            let expected_data = strings(match (rot, flip) {
+                (Zero, false) => vec!["##..", ".#..", "....", "...."],
+                (Once, false) => vec!["...#", "..##", "....", "...."],
+                (Twice, false) => vec!["....", "....", "..#.", "..##"],
+                (Thrice, false) => vec!["....", "....", "##..", "#..."],
+                (Zero, true) => vec!["..##", "..#.", "....", "...."],
+                (Once, true) => vec!["....", "....", "..##", "...#"],
+                (Twice, true) => vec!["....", "....", ".#..", "##.."],
+                (Thrice, true) => vec!["#...", "##..", "....", "...."],
+            });
+
+            let expected = Tile::parse_strings(&expected_data);
+
+            let actual = PlacedTile {
+                tile: tile.clone(),
+                rot,
+                flip,
+            }
+            .transformed();
+
+            assert_eq!(actual, expected, "{:?}, {:?}", rot, flip);
+        }
+    }
+
+    fn strings(v: Vec<&str>) -> Vec<String> {
+        let data: Vec<String> = v.iter().map(|s| s.to_string()).collect();
+        data
+    }
+}
