@@ -125,8 +125,6 @@ fn part2(cups: &[usize]) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn part1() {
         let cups: Vec<usize> = "389125467"

@@ -3,7 +3,6 @@
 use aoc20::util::{parse, print_answers};
 use itertools::iproduct;
 use ndarray::{s, Array2};
-use num::integer::div_rem;
 use num::Integer;
 use regex::Regex;
 use std::{
@@ -38,15 +37,6 @@ impl Side {
             2 => Side::Bottom,
             3 => Side::Left,
             _ => unreachable!(),
-        }
-    }
-
-    fn n(&self) -> u64 {
-        match self {
-            Side::Top => 0,
-            Side::Right => 1,
-            Side::Bottom => 2,
-            Side::Left => 3,
         }
     }
 }
@@ -91,8 +81,7 @@ impl Tile {
     fn transformed_edge(&self, rot: Rotations, flip: bool, side: Side) -> Edge {
         use {Rotations::*, Side::*};
 
-        let rev = |e: Edge| -> Edge {
-            let mut e = e.clone();
+        let rev = |mut e: Edge| -> Edge {
             e.reverse();
             e
         };
@@ -140,17 +129,6 @@ enum Rotations {
     Once,
     Twice,
     Thrice,
-}
-
-impl Rotations {
-    fn n(&self) -> u64 {
-        match self {
-            Rotations::Zero => 0,
-            Rotations::Once => 1,
-            Rotations::Twice => 2,
-            Rotations::Thrice => 3,
-        }
-    }
 }
 
 #[derive(Hash, Debug)]
@@ -248,7 +226,7 @@ fn key(edge: &Edge) -> u64 {
     let a = hash(edge);
 
     let rev = {
-        let mut e = edge.clone();
+        let mut e = edge.to_owned();
         e.reverse();
         e
     };
@@ -326,27 +304,19 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
                 edge_lookup
                     .get(&key(&to_match))
                     .map(|set| set.iter())
-                    .and_then(|it| {
-                        it.filter(|&id| tiles.contains_key(id))
-                            .filter(|&id| !is_tried(id))
-                            .next()
-                    })
+                    .and_then(|mut it| it.find(|&id| tiles.contains_key(id) && !is_tried(id)))
             } else if i % 12 == 0 {
                 let to_match = arrangement[i - 12].edge(Bottom);
                 edge_lookup
                     .get(&key(&to_match))
                     .map(|set| set.iter())
-                    .and_then(|it| {
-                        it.filter(|&id| tiles.contains_key(id))
-                            .filter(|&id| !is_tried(id))
-                            .next()
-                    })
+                    .and_then(|mut it| it.find(|&id| tiles.contains_key(id) && !is_tried(id)))
             } else {
                 let to_match = (
                     arrangement[i - 1].edge(Right),
                     arrangement[i - 12].edge(Bottom),
                 );
-                let intersection = edge_lookup
+                let mut intersection = edge_lookup
                     .get(&key(&to_match.0))
                     .and_then(|set1| {
                         edge_lookup
@@ -354,10 +324,7 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
                             .map(|set2| set1.intersection(set2))
                     })
                     .unwrap();
-                intersection
-                    .filter(|&id| tiles.contains_key(&id))
-                    .filter(|&id| !is_tried(id))
-                    .next()
+                intersection.find(|&id| tiles.contains_key(&id) && !is_tried(id))
             }
         };
 
@@ -421,7 +388,7 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
         dst.iter_mut()
             .zip(src.iter())
             .enumerate()
-            .for_each(|(j, (a, b))| *a = *b);
+            .for_each(|(_, (a, b))| *a = *b);
     }
 
     for row in image.genrows() {

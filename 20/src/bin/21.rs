@@ -2,7 +2,7 @@
 #![feature(iterator_fold_self)]
 
 use aoc20::util::{parse, print_answers};
-use itertools::{all, Itertools};
+use itertools::Itertools;
 use std::{collections::HashSet, time::Instant};
 
 fn main() -> anyhow::Result<()> {
@@ -108,10 +108,8 @@ fn part2(foods: &[Food]) -> String {
 
     allergen_ingreds.sort_unstable_by_key(|&(a, _)| a);
 
-    allergen_ingreds.iter().map(|(a, set)| set.iter().next().unwrap()).join(",")
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
+    allergen_ingreds
+        .iter()
+        .map(|(_, set)| set.iter().next().unwrap())
+        .join(",")
 }
