@@ -1,7 +1,7 @@
 (ns day1
   (:require [clojure.string :as str]))
 
-(def input (map #(Integer/parseInt %) (str/split-lines (slurp (clojure.java.io/resource "1.txt")))))
+(defn parse [file] (map #(Integer/parseInt %) (str/split-lines (slurp (clojure.java.io/resource file)))))
 
 (defn part1
   [input] (->> input
@@ -19,6 +19,6 @@
             (count)))
 
 (defn -main
-  [] (do
+  [] (do (let [input (parse "1.txt")]
        (println "Part 1:" (part1 input))
-       (println "Part 2:" (part2 input))))
+       (println "Part 2:" (part2 input)))))
