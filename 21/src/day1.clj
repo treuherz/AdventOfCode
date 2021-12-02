@@ -4,14 +4,19 @@
 (def input (map #(Integer/parseInt %) (str/split-lines (slurp (clojure.java.io/resource "1.txt")))))
 
 (defn part1
-  [input] (let [pairs (partition 2 1 input)]
-            (count (filter #(let [[a b] %] (< a b)) pairs))))
+  [input] (->> input
+            (partition 2 1)
+            (filter #(let [[a b] %] (< a b)))
+            (count)))
+
 
 (defn part2
-  [input] (let [runs (partition 3 1 input)
-                sums (map #(apply + %) runs)
-                pairs (partition 2 1 sums)]
-            (count (filter #(let [[a b] %] (< a b)) pairs))))
+  [input] (->> input
+            (partition 3 1)
+            (map #(apply + %))
+            (partition 2 1)
+            (filter #(let [[a b] %] (< a b)))
+            (count)))
 
 (defn -main
   [] (do
