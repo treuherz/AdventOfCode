@@ -1,7 +1,7 @@
 (ns day1
   (:require [clojure.string :as str]))
 
-(defn parse
+(defn parse [file]
   (->> file
     (clojure.java.io/resource)
     (slurp)
