@@ -219,30 +219,31 @@ mod tests {
 
     #[test]
     fn part2() {
-        let initial: Vec<Vec<Step>> = "\
-sesenwnenenewseeswwswswwnenewsewsw
-neeenesenwnwwswnenewnwwsewnenwseswesw
-seswneswswsenwwnwse
-nwnwneseeswswnenewneswwnewseswneseene
-swweswneswnenwsewnwneneseenw
-eesenwseswswnenwswnwnwsewwnwsene
-sewnenenenesenwsewnenwwwse
-wenwwweseeeweswwwnwwe
-wsweesenenewnwwnwsenewsenwwsesesenwne
-neeswseenwwswnwswswnw
-nenwswwsewswnenenewsenwsenwnesesenew
-enewnwewneswsewnwswenweswnenwsenwsw
-sweneswneswneneenwnewenewwneswswnese
-swwesenesewenwneswnwwneseswwne
-enesenwswwswneneswsenwnewswseenwsese
-wnwnesenesenenwwnenwsewesewsesesew
-nenewswnwewswnenesenwnesewesw
-eneswnwswnwsenenwnwnwwseeswneewsenese
-neswnwewnwnwseenwseesewsenwsweewe
-wseweeenwnesenwwwswnew"
-            .lines()
-            .map(|l| parse_steps(l).finish().unwrap().1)
-            .collect();
+        let initial: Vec<Vec<Step>> = vec![
+            "sesenwnenenewseeswwswswwnenewsewsw",
+            "neeenesenwnwwswnenewnwwsewnenwseswesw",
+            "seswneswswsenwwnwse",
+            "nwnwneseeswswnenewneswwnewseswneseene",
+            "swweswneswnenwsewnwneneseenw",
+            "eesenwseswswnenwswnwnwsewwnwsene",
+            "sewnenenenesenwsewnenwwwse",
+            "wenwwweseeeweswwwnwwe",
+            "wsweesenenewnwwnwsenewsenwwsesesenwne",
+            "neeswseenwwswnwswswnw",
+            "nenwswwsewswnenenewsenwsenwnesesenew",
+            "enewnwewneswsewnwswenweswnenwsenwsw",
+            "sweneswneswneneenwnewenewwneswswnese",
+            "swwesenesewenwneswnwwneseswwne",
+            "enesenwswwswneneswsenwnewswseenwsese",
+            "wnwnesenesenenwwnenwsewesewsesesew",
+            "nenewswnwewswnenesenwnesewesw",
+            "eneswnwswnwsenenwnwnwwseeswneewsenese",
+            "neswnwewnwnwseenwseesewsenwsweewe",
+            "wseweeenwnesenwwwswnew",
+        ]
+        .iter()
+        .map(|l| parse_steps(l).finish().unwrap().1)
+        .collect();
 
         assert_eq!(super::part2(&initial), 2208);
     }

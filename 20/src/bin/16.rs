@@ -1,7 +1,6 @@
 #![feature(iterator_fold_self)]
 
 use aoc20::util::print_answers;
-use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
     bytes::complete::take_until,
@@ -128,7 +127,7 @@ fn part2(input: &Input) -> u64 {
                     input
                         .ranges
                         .iter()
-                        .filter(|(name, [a, b])| a.contains(&n) || b.contains(&n))
+                        .filter(|(_, [a, b])| a.contains(&n) || b.contains(&n))
                         .map(|(name, _)| name)
                         .cloned()
                         .collect::<HashSet<String>>()
@@ -153,20 +152,9 @@ fn part2(input: &Input) -> u64 {
     let departure_idxs: Vec<usize> = possible_fields
         .iter()
         .enumerate()
-        .filter(|&(idx, name)| name.iter().next().unwrap().starts_with("departure"))
+        .filter(|&(_, name)| name.iter().next().unwrap().starts_with("departure"))
         .map(|(idx, _)| idx)
         .collect();
 
     departure_idxs.iter().map(|&idx| input.mine[idx]).product()
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn part1() {}
-
-    #[test]
-    fn part2() {}
 }
