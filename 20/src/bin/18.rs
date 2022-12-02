@@ -1,4 +1,3 @@
-#![feature(or_patterns)]
 #![feature(box_syntax)]
 #![feature(box_patterns)]
 

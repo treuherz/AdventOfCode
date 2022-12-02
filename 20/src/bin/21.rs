@@ -1,6 +1,3 @@
-#![feature(str_split_once)]
-#![feature(iterator_fold_self)]
-
 use aoc20::util::{parse, print_answers};
 use itertools::Itertools;
 use std::{collections::HashSet, time::Instant};
@@ -39,13 +36,13 @@ fn part1(foods: &[Food]) -> usize {
     let allergens = foods
         .iter()
         .map(|f| f.allergens.clone())
-        .fold_first(|ref a, ref b| a | b)
+        .reduce(|ref a, ref b| a | b)
         .unwrap();
 
     let ingredients = foods
         .iter()
         .map(|f| f.ingredients.clone())
-        .fold_first(|ref a, ref b| a | b)
+        .reduce(|ref a, ref b| a | b)
         .unwrap();
 
     let allergen_ingreds = allergens
@@ -55,10 +52,10 @@ fn part1(foods: &[Food]) -> usize {
                 .iter()
                 .filter(|f| f.allergens.contains(a))
                 .map(|f| f.ingredients.clone())
-                .fold_first(|ref a, ref b| a & b)
+                .reduce(|ref a, ref b| a & b)
                 .unwrap()
         })
-        .fold_first(|ref a, ref b| a | b)
+        .reduce(|ref a, ref b| a | b)
         .unwrap();
 
     let safe_ingreds = ingredients.difference(&allergen_ingreds);
@@ -72,7 +69,7 @@ fn part2(foods: &[Food]) -> String {
     let allergens = foods
         .iter()
         .map(|f| f.allergens.clone())
-        .fold_first(|ref a, ref b| a | b)
+        .reduce(|ref a, ref b| a | b)
         .unwrap();
 
     let mut allergen_ingreds: Vec<(&str, HashSet<String>)> = allergens
@@ -82,7 +79,7 @@ fn part2(foods: &[Food]) -> String {
                 .iter()
                 .filter(|f| f.allergens.contains(a))
                 .map(|f| f.ingredients.clone())
-                .fold_first(|ref a, ref b| a & b)
+                .reduce(|ref a, ref b| a & b)
                 .unwrap();
             (a.as_str(), ingreds)
         })

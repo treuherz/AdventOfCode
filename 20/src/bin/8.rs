@@ -1,5 +1,3 @@
-#![feature(str_split_once)]
-
 use aoc20::util::{parse, print_answers};
 use std::collections::HashSet;
 

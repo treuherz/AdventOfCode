@@ -1,5 +1,3 @@
-#![feature(iterator_fold_self)]
-
 use aoc20::util::{parse, print_answers};
 use itertools::Itertools;
 use std::collections::HashSet;
@@ -38,7 +36,7 @@ fn part2(inputs: &[String]) -> usize {
             g.iter()
                 .map(|s| s.chars().collect::<HashSet<char>>())
                 // ...find intersection of characters in all lines,
-                .fold_first(|prev, cur| prev.intersection(&cur).copied().collect())
+                .reduce(|prev, cur| prev.intersection(&cur).copied().collect())
                 .unwrap()
                 // get the size of the remaining set
                 .len()

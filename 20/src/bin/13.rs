@@ -1,5 +1,3 @@
-#![feature(iterator_fold_self)]
-
 use std::time::Instant;
 
 use aoc20::util::{parse, print_answers};
@@ -57,7 +55,7 @@ fn part2(inputs: &[String]) -> usize {
         step = matched
             .iter()
             .map(|(_, id)| *id)
-            .fold_first(|a, b| a.lcm(&b))
+            .reduce(|a, b| a.lcm(&b))
             .unwrap();
 
         t += step;

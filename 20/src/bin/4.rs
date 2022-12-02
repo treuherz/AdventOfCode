@@ -1,6 +1,3 @@
-#![feature(str_split_once)]
-#![feature(or_patterns)]
-
 use anyhow::{anyhow, Context};
 use aoc20::util::{parse, print_answers};
 use lazy_static::lazy_static;

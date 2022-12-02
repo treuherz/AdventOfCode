@@ -1,5 +1,3 @@
-#![feature(iterator_fold_self)]
-
 use aoc20::util::print_answers;
 use nom::{
     bytes::complete::tag,
@@ -132,7 +130,7 @@ fn part2(input: &Input) -> u64 {
                         .cloned()
                         .collect::<HashSet<String>>()
                 })
-                .fold_first(|ref a, ref b| a & b)
+                .reduce(|ref a, ref b| a & b)
                 .unwrap()
         })
         .collect();

@@ -1,5 +1,3 @@
-#![feature(or_patterns)]
-
 use aoc20::util::{parse, print_answers};
 use itertools::iproduct;
 use ndarray::{s, Array2};
@@ -391,7 +389,7 @@ fn part2(tiles: &HashMap<TileId, Tile>) -> usize {
             .for_each(|(_, (a, b))| *a = *b);
     }
 
-    for row in image.genrows() {
+    for row in image.rows() {
         for &b in row.iter() {
             print!("{}", if b { '#' } else { '.' });
         }
