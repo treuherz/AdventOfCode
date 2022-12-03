@@ -1,8 +1,12 @@
 test-all:
-    @clj -X:test
+    clj -X:test
 
 test day:
-    @clj -X:test :vars '[day{{day}}/tests]'
+    clj -X:test :patterns '["aoc22.day{{day}}"]'
 
 run day:
-    @clj -M -m day{{day}}
+    clj -M -m aoc22.day{{day}}
+
+lint:
+    clj-kondo --lint "src" --parallel
+    clj -M:analyse

@@ -228,5 +228,6 @@ pom.xml.asc
 /checkouts/
 .nrepl-port
 .cpcache/
+**/.clj-kondo/.cache
 
 # End of https://www.toptal.com/developers/gitignore/api/clojure
