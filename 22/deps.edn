@@ -1,8 +1,9 @@
 {:paths   ["src" "resources"]
  :deps    {org.clojure/tools.trace        {:mvn/version "0.7.11"}
-           org.clojure/math.combinatorics {:mvn/version "0.1.6"}}
- :aliases {:test {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
-                  :exec-fn    cognitect.test-runner.api/test
-                  :exec-args  {:dirs ["src"] :patterns ["aoc22.day.*"]}}
+           org.clojure/math.combinatorics {:mvn/version "0.1.6"}
+           org.clojure/data.priority-map  {:mvn/version "1.1.0"}}
+ :aliases {:test    {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+                     :exec-fn    cognitect.test-runner.api/test
+                     :exec-args  {:dirs ["src"] :patterns ["aoc22.day.*"]}}
            :analyse {:extra-deps {jonase/kibit {:mvn/version "0.1.8" :scope "test"}}
-                     :main-opts ["-e" "(require '[kibit.driver :as k]) (k/external-run [\"src\"] nil)"]}}}
+                     :main-opts  ["-e" "(require '[kibit.driver :as k]) (k/external-run [\"src\"] nil)"]}}}
