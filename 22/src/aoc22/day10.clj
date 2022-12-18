@@ -2,8 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is]]
-   [clojure.tools.trace :refer [trace deftrace]]))
+   [clojure.test :refer [deftest is]]))
 
 (def arg-keys
   (->> (iterate inc 1)
@@ -84,7 +83,7 @@
             screen     (add-pixels screen cycle duration x)
             x          (apply-instruction i x)]
         (recur next-cycle x instructions screen))
-      (str/join "\n" (trace (map str/join (partition 40 screen)))))))
+      (str/join "\n" (map str/join (partition 40 screen))))))
 
 (deftest tests
   (let [sample1 "noop\naddx 3\naddx -5"

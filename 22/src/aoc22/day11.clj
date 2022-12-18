@@ -81,7 +81,6 @@
         input1  (parse sample1)]
     (is (= (get input1 0) {:monkey 0, :items [79, 98], :op *, :operand 19, :div 23, :if-true 2, :if-false 3}) "parse sample1")
     (is (= (monkey-business {0 {:n 101}, 1 {:n 95}, 2 {:n 7}, 3 {:n 105}}) 10605))
-    (is (= (into {} [[:a 1]])))
     (is (= (part1 input1) 10605) "part1")
     (is (= (part2 input1) 2713310158) "part2")))
 

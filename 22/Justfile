@@ -8,5 +8,4 @@ run day:
     clj -M -m aoc22.day{{day}}
 
 lint:
-    clj-kondo --lint "src" --parallel
     clj -M:analyse

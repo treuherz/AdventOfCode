@@ -2,8 +2,7 @@
   (:require
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is]]
-   [clojure.tools.trace :refer [trace deftrace]]))
+   [clojure.test :refer [deftest is]]))
 
 (defn parse [s]
   (->> s
